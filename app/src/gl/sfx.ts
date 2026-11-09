@@ -14,7 +14,7 @@
 
 import { WORLD_W } from '@/components/game/boardView';
 import type { Era, IndustryType } from '@/game/types';
-import { LIFE, LIFE_GAP, TUNES, TUNE_FIRST, TUNE_PAUSE, VOICE_GAP, VOICE_REACT, bubbleSpan, lifeAt, nextOf, spanOf, tuneOf, voiceAt } from './playlist';
+import { LIFE, LIFE_GAP, TUNE_FIRST, TUNE_PAUSE, VOICE_GAP, VOICE_REACT, bubbleSpan, lifeAt, nextOf, spanOf, tuneOf, tunesOf, voiceAt } from './playlist';
 import type { Chance, Life } from './playlist';
 import { CAST, panOf } from './voices';
 import type { Line, Spoken } from './voices';
@@ -460,8 +460,9 @@ const grain = (ac: AudioContext): AudioBuffer => {
   return buf;
 };
 
-/** the link of an era: water for the canal, iron for the rail */
-const linkCue = (era: 'canal' | 'rail'): Cue => (era === 'rail' ? 'link-rail' : 'link-canal');
+/** the link of an era: water for the canal, iron for the rail — and on
+ *  the frozen ground a sledge's bells where the water would be */
+const linkCue = (era: 'canal' | 'rail'): Cue => (era === 'rail' ? 'link-rail' : wantBed === 'frost' ? 'link-sledge' : 'link-canal');
 
 /** the block meets the paper: a dull press, the paper's short hiss and a
  *  small brass tick of the handle — a card struck firmer than a link */
@@ -543,7 +544,7 @@ export function stampThud(kind: 'tile' | 'link' = 'tile'): void {
 
 /** an industry laid on the board: its trade heard with the stamp */
 export type TradeCue = `ind-${IndustryType}`;
-export type Cue = 'turn' | 'stamp' | 'link-canal' | 'link-rail' | 'sell' | 'loan' | 'develop' | 'card' | 'scout' | 'era-end' | 'victory' | 'defeat' | 'click' | 'panel-open' | 'panel-close' | 'refuse' | TradeCue;
+export type Cue = 'turn' | 'stamp' | 'link-canal' | 'link-rail' | 'link-sledge' | 'sell' | 'loan' | 'develop' | 'card' | 'scout' | 'era-end' | 'victory' | 'defeat' | 'click' | 'panel-open' | 'panel-close' | 'refuse' | TradeCue;
 const BUS_OF: Record<Cue, Bus> = {
   turn: 'moments',
   'era-end': 'moments',
@@ -552,6 +553,7 @@ const BUS_OF: Record<Cue, Bus> = {
   stamp: 'gestures',
   'link-canal': 'gestures',
   'link-rail': 'gestures',
+  'link-sledge': 'gestures',
   sell: 'gestures',
   loan: 'gestures',
   develop: 'gestures',
@@ -1210,7 +1212,7 @@ function waitTune(seconds: number): void {
   const era = tuneEra;
   if (!era) return;
   const name = nextOf(
-    TUNES[era].map((t) => t.name),
+    tunesOf(era, wantBed === 'frost').map((t) => t.name),
     lastTune,
     chance,
   );
@@ -1319,7 +1321,7 @@ export function tuneNow(): boolean {
   playTune(
     era,
     nextOf(
-      TUNES[era].map((t) => t.name),
+      tunesOf(era, wantBed === 'frost').map((t) => t.name),
       lastTune,
       chance,
     ),
