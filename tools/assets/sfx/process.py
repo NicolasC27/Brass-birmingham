@@ -219,7 +219,17 @@ LOOPS = {
     # plain with the ice far off; only the model's floor under 30 Hz is cut,
     # the wind itself living low. Levelled at -24 LUFS, between the two
     # eras' beds, since it stands in for either
-    'amb-frost': ('amb-frost-1', 'highpass=f=30,highpass=f=30', -24.0, True),
+    # takes 3 and 4 are not the model's: thirty seconds each cut from two
+    # CC0 recordings of Joseph Sardin's (bigsoundbank.com, s0595 'Wind', a
+    # Foley wind with no trees nor birds, and s0147, a hiss through a
+    # window laid faintly under it), the sources kept in raw/bigsoundbank/.
+    # The model's take 1 (-36 LUFS, a real wind) is kept, not served
+    'amb-frost': ('amb-frost-3', 'highpass=f=30,highpass=f=30', -24.0, True,
+                  {'breathe': 2.0, 'under': ('amb-frost-4', 'highpass=f=600,highpass=f=600', -33.0)}),
+    # the storm over the frozen ground, faded over the wind as it rises
+    # (windStorm in sfx.ts): the strongest half-minute of s1450, storm
+    # Miguel in the trees, its leaves filtered down so only the gusts are left
+    'amb-storm': ('amb-storm-1', 'highpass=f=40,highpass=f=40,lowpass=f=1800,lowpass=f=1800', -21.0, True, {'breathe': 2.5}),
     'amb-rail': ('amb-rail-1', 'highpass=f=45,highpass=f=45,lowpass=f=300,lowpass=f=300', -26.0, False,
                  {'breathe': 3.0, 'under': ('amb-canal-3', 'highpass=f=1500,highpass=f=1500', -32.0)}),
 }

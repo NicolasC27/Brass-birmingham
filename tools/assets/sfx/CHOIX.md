@@ -1009,3 +1009,19 @@ crossing the valley like the train and the geese), a works' horn in the
 storm (`life-horn`, which came back at -6.7 LUFS and is brought down 18
 dB), men breaking the river ice (`life-pick`). One take each, ~300
 credits in all, levelled with the canal's life at -27 LUFS.
+
+## The wind from the public domain (2026-11-09)
+
+Nicolas asked whether the wind could not be found in free sound, and
+dropped three CC0 recordings of Joseph Sardin's (bigsoundbank.com — free
+for commercial use, no attribution asked; the sources kept in
+`raw/bigsoundbank/`) at the root: s0595 'Wind' (a Foley wind, 1:30, no
+trees nor birds, -24 LUFS), s0147 'Whistling of the wind #1' (a hiss
+through a window, 1:46, -28), s1450 'Strong wind and trees #1' (storm
+Miguel, 1:59, -15). Thirty seconds cut from each: `amb-frost-3` (s0595
+from 0:20) is now the frozen city's bed, breathing 2 dB, with
+`amb-frost-4` (s0147 from 0:10, over 600 Hz only) laid 9 dB under it;
+`amb-storm-1` (s1450 from 0:55, its loudest half-minute, the leaves
+filtered off above 1.8 kHz) is the storm's own loop at -21 LUFS, faded
+over the wind as the storm rises (`windStorm` in sfx.ts) and gone with
+it. The model's take (`amb-frost-1`) stays in raw/, not served.

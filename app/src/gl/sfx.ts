@@ -707,6 +707,8 @@ const AMB_FADE = 3;
  *  murmur of the town far off with a few birds, levelled at -26 LUFS so
  *  that it tires no one; its trains come now and then over it */
 const AMB_TRIM: Record<Bed, number> = { canal: 1.4, rail: 1.2, frost: 1.2 };
+/** the storm's loop at its height, over the wind */
+const STORM_TRIM = 1.3;
 /** the wind made on the spot, when its recording could not be had:
  *  levelled by ear against the canal's bed */
 const WIND_TRIM = 0.5;
@@ -781,17 +783,44 @@ function windBed(ac: AudioContext): { src: AudioBufferSourceNode; gain: GainNode
   };
 }
 
-/** the storm over a frozen ground, 0 to 1: the wind heard rising with
- *  it, up to twice its level, and falling back */
+/** the storm over a frozen ground, 0 to 1: its own loop (amb-storm, the
+ *  gusts of a real storm) faded in over the wind as it rises, and the
+ *  wind itself lifted a little; the loop is fetched the first time a
+ *  storm comes and let go with the wind's bed */
 let stormLevel = 0;
+let stormLoop: { src: AudioBufferSourceNode; gain: GainNode } | null = null;
+let stormAsking = false;
 export function windStorm(level: number): void {
   const l = Math.min(1, Math.max(0, level));
   if (Math.abs(l - stormLevel) < 0.01) return;
   stormLevel = l;
   if (!table || table.bed !== 'frost') return;
-  const ac = table.src.context;
+  const ac = audio();
+  if (!ac) return;
   const base = table.stop ? WIND_TRIM : AMB_TRIM.frost;
-  table.gain.gain.setTargetAtTime(base * (1 + 1.1 * l), ac.currentTime, 0.8);
+  table.gain.gain.setTargetAtTime(base * (1 + 0.5 * l), ac.currentTime, 0.8);
+  if (stormLoop) {
+    stormLoop.gain.gain.setTargetAtTime(STORM_TRIM * l, ac.currentTime, 1.2);
+    return;
+  }
+  if (l <= 0 || stormAsking) return;
+  stormAsking = true;
+  void sample('amb-storm').then((buf) => {
+    stormAsking = false;
+    if (!buf || stormLoop || !table || table.bed !== 'frost') return;
+    const src = ac.createBufferSource();
+    src.buffer = buf;
+    src.loop = true;
+    src.loopStart = 0;
+    src.loopEnd = Math.min(buf.duration, AMB_LOOP_S);
+    const gain = ac.createGain();
+    const t0 = ac.currentTime;
+    gain.gain.setValueAtTime(0.0001, t0);
+    gain.gain.setTargetAtTime(STORM_TRIM * stormLevel, t0, 1.2);
+    src.connect(gain).connect(busOf(ac, 'ambience'));
+    src.start(t0);
+    stormLoop = { src, gain };
+  });
 }
 
 function applyAmbience(): void {
@@ -800,6 +829,11 @@ function applyAmbience(): void {
   if (table && table.bed !== bed) {
     fadeOut(table, bed ? AMB_FADE : 1);
     table = null;
+    /* the storm goes with the wind */
+    if (stormLoop) {
+      fadeOut(stormLoop, bed ? AMB_FADE : 1);
+      stormLoop = null;
+    }
   }
   if (!bed || table) return;
   void context().then(async (ac) => {
