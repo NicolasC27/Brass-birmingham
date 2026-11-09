@@ -518,3 +518,13 @@ canal link is an ice road, pale ice between dark banks, the owner's
 colour as the lanterns posted along it rather than as the water; a rail
 link is iron on the snow, the owner's sleepers under twin rails of
 frosted steel. Every other ground keeps the slim ribbons.
+
+### The HUD iced over
+
+On the frozen ground the game page marks itself (`data-weather="frost"`
+on `<html>`, set by `Game.tsx`) and `index.css` ices the HUD over: a rim
+of frost at the plates' corners and a line of ice along their top edge
+(`.plate`, `.plaque`), the brass gone cold and bluer (`.plaque-brass`,
+`--brass-plate` for the tickets), the era named by its winter — "Hiver
+1847", "Hiver 1848" — and the era's track frozen over. The players'
+colours and the cards keep their own. Nothing of it on any other ground.

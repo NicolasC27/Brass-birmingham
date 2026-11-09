@@ -56,6 +56,8 @@ const game: typeof engame = {
     eraCanal: 'Era del canal',
     eraRail: 'Era del ferrocarril',
     eraRoundTitle: '{era} — ronda {round} de {total}',
+    eraWinterCanal: 'Invierno de 1847',
+    eraWinterRail: 'Invierno de 1848',
     prepare: 'Preparar',
     queued: 'Listo para mi turno:',
     queueDrop: 'Retirar esta jugada',

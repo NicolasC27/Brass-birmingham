@@ -36,7 +36,7 @@ import { useTableSounds } from '@/components/game/useTableSounds';
 import PlayerMat from '@/components/game/PlayerMat';
 import TitleCard, { TitlePlate, TroubleCard } from '@/components/game/TitleCard';
 import { useBoardSet } from '@/components/game/titleStage';
-import { MAT_STYLES, getBoardOptions, setBoardOption, useBoardOptions } from '@/components/game/boardOptions';
+import { MAT_STYLES, getBoardOptions, groundWeather, setBoardOption, useBoardOptions } from '@/components/game/boardOptions';
 import { analysisLane, useHudInsets } from '@/components/game/useHudInsets';
 import { isKey, keyLabel, onControl, typing, useKeybindings } from '@/components/game/keybindings';
 import { ownMatSeat } from '@/components/game/railLogic';
@@ -137,6 +137,15 @@ export default function Game({ demo = false }: { demo?: boolean } = {}) {
   const queuedCount = queued.length;
   /* showing the orders on the board: the focus view meanwhile, the reader's own setting back after */
   const focusBefore = useRef<boolean | null>(null);
+  /* the ground's weather on the page itself: the HUD's plates ice over
+     on the frozen ground (index.css, [data-weather="frost"]) */
+  useEffect(() => {
+    const w = groundWeather();
+    if (w) document.documentElement.dataset.weather = w;
+    return () => {
+      delete document.documentElement.dataset.weather;
+    };
+  }, []);
   useEffect(() => {
     if (!surveying) return;
     if (focusBefore.current === null) focusBefore.current = getBoardOptions().focus;

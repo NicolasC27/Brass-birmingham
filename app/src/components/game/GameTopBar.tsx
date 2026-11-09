@@ -9,7 +9,7 @@ import { cardLabel, confirmCost, confirmSummary, projectQueued, useGame, verbsFo
 import { WhyLink } from './RulesOverlay';
 import type { GameState, Verb } from '@/game/types';
 import { money, reasonText, useT } from '@/i18n';
-import { aidOn, useBoardOptions } from './boardOptions';
+import { aidOn, groundWeather, useBoardOptions } from './boardOptions';
 import { drawText, moveHead, planDraws, saleText, type Draw, type DrawPicks, type DrawResource, type DrawSale } from './draws';
 import { stripRoom } from './stripRoom';
 import { useHudInsets } from './useHudInsets';
@@ -145,6 +145,8 @@ const LIT = { filter: 'drop-shadow(0 0 2px rgba(242,234,214,.85))' };
 
 function EraTrack({ era, round, total }: { era: 'canal' | 'rail'; round: number; total: number }) {
   const w = EDGE * 2 + total * STEP;
+  /* the cut frozen over on the frozen ground */
+  const ice = groundWeather() === 'frost';
   const at = (i: number) => EDGE + i * STEP + STEP / 2;
   const now = Math.min(total, Math.max(1, round)) - 1;
   /* the line run over so far ends at the middle of the current sleeper */
@@ -156,8 +158,8 @@ function EraTrack({ era, round, total }: { era: 'canal' | 'rail'; round: number;
         {/* the towpath, a trodden dotted line above the cut */}
         <line x1={0} x2={w} y1={3.5} y2={3.5} className="stroke-brass-700/70" strokeWidth={0.8} strokeDasharray="1.2 1.6" />
         {/* the water: filled up to the lock the boat stands at */}
-        <rect x={0} y={7} width={w} height={8} className="fill-player-steel/15" />
-        <rect x={0} y={7} width={run} height={8} className="fill-player-steel/60" />
+        <rect x={0} y={7} width={w} height={8} className={ice ? 'fill-[#bcd4e8]/20' : 'fill-player-steel/15'} />
+        <rect x={0} y={7} width={run} height={8} className={ice ? 'fill-[#bcd4e8]/75' : 'fill-player-steel/60'} />
         <line x1={0} x2={run} y1={8.6} y2={8.6} className="stroke-cream-100/25" strokeWidth={0.6} />
         <line x1={0} x2={w} y1={7} y2={7} className="stroke-cream-100/30" strokeWidth={0.8} />
         <line x1={0} x2={w} y1={15} y2={15} className="stroke-cream-100/30" strokeWidth={0.8} />
@@ -520,7 +522,10 @@ function GameTopBar({ candle, marketOpen }: { candle: CandleProp; marketOpen: bo
   /* a turn spends cards: the actions as card stubs, played, in hand, to come */
   const stubs = Array.from({ length: maxActions }, (_, i) => (i < done ? 'played' : i === done ? 'current' : 'next') as 'played' | 'current' | 'next');
   const theirs = !mine;
-  const eraTitle = t('game.topbar.eraRoundTitle', { era: game.era === 'canal' ? t('game.topbar.eraCanal') : t('game.topbar.eraRail'), round: game.round, total });
+  /* on the frozen ground the era is named by its winter */
+  const frost = groundWeather() === 'frost';
+  const eraName = frost ? t(game.era === 'canal' ? 'game.topbar.eraWinterCanal' : 'game.topbar.eraWinterRail') : t(game.era === 'canal' ? 'game.topbar.eraCanal' : 'game.topbar.eraRail');
+  const eraTitle = t('game.topbar.eraRoundTitle', { era: eraName, round: game.round, total });
   /* at the confirm, the portrait and the stubs step aside on a narrow
      table: the line is the move, its tokens and its price */
   const settle = mine && stage === 'ready';

@@ -1285,3 +1285,39 @@ html.lamps .platform-root * {
   transition: background-color 700ms ease, color 700ms ease, border-color 700ms ease !important;
 }
 
+/* ---------------------------------------------------------------- */
+/* The frozen ground (data-weather="frost" on <html>, set by the      */
+/* game page): the HUD's plates ice over — a rim of frost creeping in */
+/* at the corners, a line of ice along the top edge — and the brass   */
+/* goes cold, paler and bluer. The players' colours and the cards     */
+/* keep their own.                                                    */
+/* ---------------------------------------------------------------- */
+[data-weather='frost'] {
+  --brass-plate: 176 196 214;
+}
+[data-weather='frost'] .plate,
+[data-weather='frost'] .plaque {
+  border-color: rgba(8, 14, 24, 0.9);
+  background:
+    radial-gradient(ellipse at top left, rgba(214, 228, 242, 0.22), transparent 36%),
+    radial-gradient(ellipse at bottom right, rgba(214, 228, 242, 0.16), transparent 34%),
+    linear-gradient(180deg, rgba(34, 38, 48, 0.96), rgba(18, 21, 28, 0.98));
+  box-shadow:
+    inset 0 0 0 1px rgba(176, 196, 214, 0.42),
+    inset 0 1px 0 rgba(236, 244, 252, 0.28),
+    0 4px 10px rgba(0, 0, 0, 0.45),
+    0 14px 30px rgba(0, 0, 0, 0.35);
+}
+[data-weather='frost'] .plaque-brass {
+  background: linear-gradient(180deg, #3a4452 0%, #242b36 55%, #171c24 100%);
+  box-shadow:
+    inset 0 0 0 1px rgba(214, 228, 242, 0.6),
+    inset 0 0 0 3px rgba(8, 12, 18, 0.9),
+    inset 0 0 0 4px rgba(176, 196, 214, 0.3),
+    0 2px 6px rgba(0, 0, 0, 0.5);
+}
+[data-weather='frost'] .gz-ticket-brass {
+  color: #121820;
+  border-color: rgba(8, 14, 24, 0.5);
+  text-shadow: 0 1px 0 rgba(236, 244, 252, 0.4);
+}

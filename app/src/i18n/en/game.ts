@@ -54,6 +54,8 @@ const game = {
     eraCanal: 'Canal Era',
     eraRail: 'Rail Era',
     eraRoundTitle: '{era} — Round {round} of {total}',
+    eraWinterCanal: 'Winter 1847',
+    eraWinterRail: 'Winter 1848',
     prepare: 'Prepare',
     queued: 'Ready for my turn:',
     queueDrop: 'Drop this move',

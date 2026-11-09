@@ -56,6 +56,8 @@ const fr: typeof engame = {
     eraCanal: 'Ère canal',
     eraRail: 'Ère rail',
     eraRoundTitle: '{era} — manche {round} sur {total}',
+    eraWinterCanal: 'Hiver 1847',
+    eraWinterRail: 'Hiver 1848',
     prepare: 'Préparer',
     queued: 'Prêt pour mon tour :',
     queueDrop: 'Retirer ce coup',
