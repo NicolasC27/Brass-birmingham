@@ -149,6 +149,7 @@ const site: typeof enSite = {
       'already-friends': 'Ya sois amigos.',
       'silenced': 'La dirección le ha silenciado por un tiempo.',
       'too-long': 'Una línea vacía, o demasiado larga: 280 caracteres como máximo.',
+      'no-links': 'Ni direcciones ni enlaces en el telégrafo.',
       yourself: 'Es usted.',
     },
   },

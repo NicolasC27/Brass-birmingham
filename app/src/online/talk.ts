@@ -3,7 +3,7 @@ import { onlineWire } from './net';
 import type { Wire } from './wire';
 import type { ServerMessage } from './protocol';
 import type { Line, Room } from './parlour';
-import { HALL, friendRoom } from './parlour';
+import { HALL, friendRoom, hasLink } from './parlour';
 
 /* ------------------------------------------------------------------ */
 /* The parlour, as this browser keeps it.                              */
@@ -252,6 +252,8 @@ export function loadMore(room: Room): void {
 export async function say(room: Room, text: string): Promise<void> {
   const w = attach();
   if (!w) throw new Error('offline');
+  /* the office would say the same: said here at once, without the trip */
+  if (hasLink(text)) throw new Error('no-links');
   await w.ask((rid) => ({ t: 'say', rid, room, text }));
 }
 

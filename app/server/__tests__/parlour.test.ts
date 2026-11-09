@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it } from 'vitest';
 import type { ServerMessage } from '@/online/protocol';
-import { HALL, friendRoom, tableRoom } from '@/online/parlour';
+import { HALL, friendRoom, hasLink, tableRoom } from '@/online/parlour';
 import type { Line, Unread } from '@/online/parlour';
 import { serve } from '../index';
 import type { Serving } from '../index';
@@ -19,6 +19,13 @@ const unread = (g: Guest): Unread[] | null => {
   return last ? last.rooms : null;
 };
 const refusals = (g: Guest, rid: number) => g.frames.filter((f): f is Extract<ServerMessage, { t: 'refused' }> => f.t === 'refused' && f.rid === rid).map((f) => f.error);
+
+describe('a link in a line', () => {
+  it('is caught whatever its dress, and a plain sentence is not', () => {
+    for (const bad of ['see https://example.com/x', 'http://localhost:3000', 'www.blackrail.fr', 'go to blackrail.fr now', 'Blackrail . FR', 'discord.gg/abc', 'mail me at bob(dot)example(dot)com', 'sub.domain.co.uk', 'MYSITE.COM']) expect(hasLink(bad), bad).toBe(true);
+    for (const fine of ['Good evening, all.', 'the table 4M8T is open', 'I built 3 mines. Then a brewery.', 'Pas mal... et toi?', 'v1.2 of the rules', 'Birmingham is far.From Oxford', '12.50 pounds']) expect(hasLink(fine), fine).toBe(false);
+  });
+});
 
 describe('the parlour', () => {
   let server: Serving | null = null;
@@ -91,6 +98,10 @@ describe('the parlour', () => {
     await ada.until('the sixth turned down', () => refusals(ada, 15).length === 1);
     expect(heard(ada)).toHaveLength(5);
     expect(refusals(ada, 15)).toEqual(['refused']);
+    /* no address of any kind */
+    ada.send({ t: 'say', rid: 18, room: HALL, text: 'join us at discord.gg/blackrail' });
+    await ada.until('the refusal', () => refusals(ada, 18).length === 1);
+    expect(refusals(ada, 18)).toEqual(['no-links']);
     /* a room the office does not keep */
     ada.send({ t: 'say', rid: 20, room: 'attic', text: 'anyone?' });
     await ada.until('the refusal', () => refusals(ada, 20).length === 1);

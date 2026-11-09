@@ -61,8 +61,15 @@ export function cleanLine(raw: unknown): string | null {
   return text;
 }
 
+/* an address in a line: a scheme, a www, or a name with a known ending —
+   caught whatever the case, and even with the dots spaced or spelt out */
+const LINK = /\b(?:https?:\/\/|www\.)|(?:^|[^\p{L}\p{N}])[\p{L}\p{N}-]{2,}(?:\s*(?:\.|\(dot\)|\[dot\])\s*[\p{L}\p{N}-]{2,})*\s*(?:\.|\(dot\)|\[dot\])\s*(?:com|net|org|io|gg|fr|de|es|co|uk|eu|me|tv|app|dev|xyz|info|biz|link|ly|be|ch|ca|us|it|nl|site|online|club|gl)(?![\p{L}\p{N}])/iu;
+
+/** the parlour carries no address: a line with a link in it is turned down */
+export const hasLink = (text: string): boolean => LINK.test(text);
+
 /** why a line was not carried */
-export type SayError = 'refused' | 'not-found' | 'silenced' | 'too-long' | 'verify-first';
+export type SayError = 'refused' | 'not-found' | 'silenced' | 'too-long' | 'no-links' | 'verify-first';
 
 /** a line reported to the direction, as its desk reads it */
 export interface Report {

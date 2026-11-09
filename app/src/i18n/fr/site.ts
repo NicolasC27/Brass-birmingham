@@ -149,6 +149,7 @@ const site: typeof enSite = {
       'already-friends': 'Vous êtes déjà amis.',
       'silenced': 'La direction vous a mis au silence pour un temps.',
       'too-long': 'Une ligne vide, ou trop longue : 280 caractères au plus.',
+      'no-links': 'Pas d’adresse ni de lien dans le télégraphe.',
       yourself: 'C’est vous.',
     },
   },

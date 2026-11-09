@@ -147,6 +147,7 @@ const site = {
       'already-friends': 'You are friends already.',
       'silenced': 'The direction has silenced you for a while.',
       'too-long': 'An empty line, or one too long: 280 characters at most.',
+      'no-links': 'No address or link in the telegraph.',
       yourself: 'That is you.',
     },
   },

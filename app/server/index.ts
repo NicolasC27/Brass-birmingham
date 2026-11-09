@@ -18,7 +18,7 @@ import type { ClientMessage, ServerMessage } from '@/online/protocol';
 import type { JudgeId } from '@/game/analysis';
 import type { Me, TableQuery } from '@/online/table';
 import { normalizeCode } from '@/online/table';
-import { SAY_SHOWER, SAY_WINDOW_MS, cleanLine, friendRoom, roomOf, tableRoom } from '@/online/parlour';
+import { SAY_SHOWER, SAY_WINDOW_MS, cleanLine, friendRoom, hasLink, roomOf, tableRoom } from '@/online/parlour';
 import type { Room } from '@/online/parlour';
 import { CAPS } from '@/game/analysisMerge';
 import type { Facts } from '@/game/analysisMerge';
@@ -1173,6 +1173,11 @@ export function serve(options: ServeOptions = {}): Promise<Serving> {
         }
         if (!text) {
           send(c, { t: 'refused', rid: m.rid, error: 'too-long' });
+          return;
+        }
+        /* no address of any kind: the parlour is not a noticeboard */
+        if (hasLink(text)) {
+          send(c, { t: 'refused', rid: m.rid, error: 'no-links' });
           return;
         }
         const now = Date.now();
