@@ -813,6 +813,7 @@ const platform = {
       portrait: 'Portraits',
       tiles: 'Tuiles',
       ground: 'Terrains',
+      cards: 'Cartes',
     },
     rarity: {
       common: 'Commun',
@@ -877,6 +878,9 @@ const platform = {
       'tiles-mono': 'Le jeu au trait',
       'ground-midlands': 'Le modèle anglais',
       'ground-frost': 'La cité gelée',
+      'tiles-frost': 'Les tuiles d’hiver',
+      'cards-plain': 'Les gravures',
+      'cards-frost': 'Les gravures d’hiver',
     },
     blurbs: {
       'sign-shrewsbury': 'Le comptoir du marchand en film, la cloche et l’ambiance de la rue au survol.',
@@ -892,6 +896,9 @@ const platform = {
       'tiles-mono': 'Les cases vides en noir et blanc, pour lire la carte d’un coup d’œil.',
       'ground-midlands': 'Les Midlands en plâtre peint sous une lumière rasante, le plateau de tout le monde.',
       'ground-frost': 'Les Midlands sous la glace : une cité par métier, le vent, la neige et les fourneaux. Un terrain, pas une règle.',
+      'tiles-frost': 'Les sujets peints sous une poudrée de neige, la lumière un peu plus froide, une fenêtre allumée.',
+      'cards-plain': 'Les villes de la main gravées comme sur la boîte.',
+      'cards-frost': 'Les mêmes planches sous la neige : les toits blancs, les canaux gelés, les barques prises dans la glace.',
     },
   },
   // --- ranking ---

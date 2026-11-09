@@ -467,3 +467,19 @@ places that are read); the townsfolk's bubbles iced and rimmed in blue
 (`VoiceBubble.tsx`); a sledge's bells for a link laid on the ice
 (`link-sledge`); and Birmingham's hearth burning wider for every works
 the city builds (`hearthHalo` in ambiance.ts).
+
+### The winter tiles and the winter engravings, at the counter
+
+Asked for the tiles and the cards "en mode Frostpunk, très légèrement",
+sold apart: the six painted subjects (`tools/tiles/subjects`) handed to
+`fal-ai/nano-banana/edit` on magenta — "a thin dusting of snow along the
+top edges, a little frost, the light a touch colder, change nothing
+else" — keyed off, and built into `app/public/tiles-frost` by
+`tools/tiles/build-subject.sh tools/tiles/subjects-frost tiles-frost`
+(the 44 files, dual slots included). The set is the `frost` variant of
+every industry in `faces.ts`, worn through `tileArt` by `tiles-frost`
+(120 guineas). The winter engravings already made for the frozen ground
+are the `cards-frost` item (90 guineas), worn through the `cardSet`
+option; the frozen ground still deals them on its own. The pottery
+subject was refused three times with the trade named and came on the
+first ask without it.

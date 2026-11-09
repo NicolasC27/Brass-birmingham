@@ -813,6 +813,7 @@ const platform = {
       portrait: 'Retratos',
       tiles: 'Losetas',
       ground: 'Terrenos',
+      cards: 'Cartas',
     },
     rarity: {
       common: 'Común',
@@ -877,6 +878,9 @@ const platform = {
       'tiles-mono': 'El juego a línea',
       'ground-midlands': 'El modelo inglés',
       'ground-frost': 'La ciudad helada',
+      'tiles-frost': 'Las losetas de invierno',
+      'cards-plain': 'Los grabados',
+      'cards-frost': 'Los grabados de invierno',
     },
     blurbs: {
       'sign-shrewsbury': 'El mostrador del mercader en película, la campana y el bullicio de la calle al pasar el cursor.',
@@ -892,6 +896,9 @@ const platform = {
       'tiles-mono': 'Las casillas vacías en blanco y negro, para leer el mapa de un vistazo.',
       'ground-midlands': 'Los Midlands en yeso pintado bajo una luz rasante, el tablero de todos.',
       'ground-frost': 'Los Midlands bajo el hielo: bajo cada ciudad un asentamiento de su oficio, el viento, la nieve y los hornos. Un terreno, no una regla.',
+      'tiles-frost': 'Los motivos pintados bajo una capa de nieve, la luz un punto más fría, una ventana encendida.',
+      'cards-plain': 'Las ciudades de la mano grabadas como en la caja.',
+      'cards-frost': 'Las mismas planchas bajo la nieve: tejados blancos, canales helados, las barcas presas en el hielo.',
     },
   },
   // --- ranking ---

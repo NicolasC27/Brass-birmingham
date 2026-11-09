@@ -815,6 +815,7 @@ const platform: typeof enPlatform = {
       portrait: 'Porträts',
       tiles: 'Plättchen',
       ground: 'Gelände',
+      cards: 'Karten',
     },
     rarity: {
       common: 'Gewöhnlich',
@@ -879,6 +880,9 @@ const platform: typeof enPlatform = {
       'tiles-mono': 'Der Strichsatz',
       'ground-midlands': 'Das englische Modell',
       'ground-frost': 'Die gefrorene Stadt',
+      'tiles-frost': 'Die Winterplättchen',
+      'cards-plain': 'Die Stiche',
+      'cards-frost': 'Die Winterstiche',
     },
     blurbs: {
       'sign-shrewsbury': 'Das Kontor des Händlers im Film, die Glocke und das Treiben der Straße beim Überfahren.',
@@ -894,6 +898,9 @@ const platform: typeof enPlatform = {
       'tiles-mono': 'Die leeren Felder in Schwarz-Weiß, um die Karte auf einen Blick zu lesen.',
       'ground-midlands': 'Die Midlands in bemaltem Gips unter streifendem Licht, das Brett für alle.',
       'ground-frost': 'Die Midlands unter dem Eis: unter jeder Stadt eine Siedlung ihres Gewerbes, der Wind, der Schnee und die Öfen. Ein Gelände, keine Regel.',
+      'tiles-frost': 'Die gemalten Motive unter einem Hauch Schnee, das Licht einen Ton kälter, ein Fenster erleuchtet.',
+      'cards-plain': 'Die Städte der Hand gestochen wie auf der Schachtel.',
+      'cards-frost': 'Dieselben Platten unter Schnee: weiße Dächer, gefrorene Kanäle, die Boote im Eis.',
     },
   },
   // --- ranking ---

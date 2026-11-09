@@ -59,6 +59,7 @@ export const FROST_URL: MapSet = { canal: '/map-frostcity-canal.webp', rail: '/m
 /** the ground worn: the English model, or the frozen city from the counter */
 export type Ground = 'midlands' | 'frost';
 export const sanitizeGround = (g: unknown): Ground => (g === 'frost' ? 'frost' : 'midlands');
+export type CardSet = 'plain' | 'frost';
 /* a ground being tried is asked for in the address (?ground=frost), over
    whatever board is on the table: the frozen country, the English model
    under snow — the same swells in a polar twilight, the canals gone to
@@ -149,6 +150,8 @@ export interface BoardOptions {
   slotArt: SlotArt;
   /** the ground under the board, from the counter */
   ground: Ground;
+  /** the hand's location cards: the engravings as they are, or under snow */
+  cardSet: CardSet;
   /** colour-blind mode: owner shape medallions on built cards and/or links */
   colorBlind: boolean;
   sealTiles: boolean;
@@ -211,6 +214,7 @@ const KEYS: Record<Exclude<keyof BoardOptions, 'settingsOpen'>, string> = {
   matOrder: 'brassworks.matOrder',
   slotArt: 'brassworks.slotArt',
   ground: 'brassworks.ground',
+  cardSet: 'brassworks.cardSet',
   colorBlind: 'brassworks.colorBlind',
   sealTiles: 'brassworks.colorBlind.tiles',
   sealLinks: 'brassworks.colorBlind.links',
@@ -279,6 +283,7 @@ let state: BoardOptions = {
   /* the empty slots print in black ink by default: the sepia plate stays a choice */
   slotArt: read('slotArt', 'mono'),
   ground: sanitizeGround(read('ground', 'midlands')),
+  cardSet: read('cardSet', 'plain') === 'frost' ? 'frost' : 'plain',
   /* on by default: oxblood and verdigris sit too close under deuteranopia
      and protanopia for colour alone to tell the owners apart */
   /* colour-blind seals are asked for, not imposed */

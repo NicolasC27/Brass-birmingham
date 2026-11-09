@@ -8,7 +8,9 @@ import Modal from '@/components/platform/Modal';
 import Tabs, { TabPanel } from '@/components/platform/Tabs';
 import PageShell from '@/components/site/PageShell';
 import Toast, { type ToastData } from '@/components/platform/Toast';
-import { setBoardOption, useBoardOptions, type BoardOptions, type Ground } from '@/components/game/boardOptions';
+import { setBoardOption, useBoardOptions, type BoardOptions, type CardSet, type Ground } from '@/components/game/boardOptions';
+import type { IndustryType } from '@/game/types';
+import type { TileArt } from '@/gl/faces';
 import type { SlotArt } from '@/gl/faces';
 import { CATALOG, COUNTER_OPEN, SHOWN_CATEGORIES, type Category, type Rarity, type ShopItem } from '@/platform/catalog';
 import { equip, useWallet, type Wallet } from '@/platform/wallet';
@@ -54,6 +56,9 @@ const PIC: Record<string, string> = {
   'portrait-4': '/portrait-4.webp',
   'tiles-engraved': '/tile-coal-cut.png',
   'tiles-mono': '/tile-coal-cut.png',
+  'tiles-frost': '/tiles-frost/tile-coal-cut.webp',
+  'cards-plain': '/cards/town-stoke.webp',
+  'cards-frost': '/cards/town-stoke-frost.webp',
   'ground-midlands': '/comptoir-ground-midlands.webp',
   'ground-frost': '/comptoir-ground-frost.webp',
 };
@@ -61,14 +66,21 @@ const PIC: Record<string, string> = {
 /** les catégories dont le choix équipé est une préférence locale (carte de membre) */
 const LOCAL_WEAR: ReadonlySet<Category> = new Set<Category>(['avatar', 'frame', 'title']);
 /** celles qui s'affichent avec une description sous le nom */
-const WITH_BLURB: ReadonlySet<Category> = new Set<Category>(['sign', 'portrait', 'tiles', 'ground']);
+const WITH_BLURB: ReadonlySet<Category> = new Set<Category>(['sign', 'portrait', 'tiles', 'cards', 'ground']);
 
-type BoardWear = { key: 'slotArt'; value: SlotArt } | { key: 'ground'; value: Ground };
+type BoardWear = { key: 'slotArt'; value: SlotArt } | { key: 'ground'; value: Ground } | { key: 'cardSet'; value: CardSet } | { key: 'tileArt'; value: TileArt };
+
+/** every industry in one painted set */
+const ALL_INDUSTRIES: IndustryType[] = ['coal', 'iron', 'cotton', 'manufacturer', 'pottery', 'brewery'];
+const setOf = (id: string): TileArt => Object.fromEntries(ALL_INDUSTRIES.map((i) => [i, id]));
 
 /** ce que porter un objet change sur le plateau, quand ça change quelque chose */
 function boardWear(item: ShopItem): BoardWear | null {
   if (item.id === 'tiles-mono') return { key: 'slotArt', value: 'mono' };
   if (item.id === 'tiles-engraved') return { key: 'slotArt', value: 'engraved' };
+  if (item.id === 'tiles-frost') return { key: 'tileArt', value: setOf('frost') };
+  if (item.id === 'cards-frost') return { key: 'cardSet', value: 'frost' };
+  if (item.id === 'cards-plain') return { key: 'cardSet', value: 'plain' };
   if (item.id === 'ground-frost') return { key: 'ground', value: 'frost' };
   if (item.id === 'ground-midlands') return { key: 'ground', value: 'midlands' };
   return null;
@@ -76,6 +88,7 @@ function boardWear(item: ShopItem): BoardWear | null {
 
 function isEquipped(item: ShopItem, wallet: Wallet, opts: BoardOptions): boolean {
   const w = boardWear(item);
+  if (w?.key === 'tileArt') return ALL_INDUSTRIES.every((i) => (opts.tileArt[i] ?? 'v3') === w.value[i]);
   if (w) return opts[w.key] === w.value;
   if (LOCAL_WEAR.has(item.category)) return wallet.equipped[item.category] === item.id;
   return false;

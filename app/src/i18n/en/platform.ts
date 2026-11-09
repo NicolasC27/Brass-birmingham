@@ -813,6 +813,7 @@ const platform = {
       portrait: 'Portraits',
       tiles: 'Tiles',
       ground: 'Grounds',
+      cards: 'Cards',
     },
     rarity: {
       common: 'Common',
@@ -877,6 +878,9 @@ const platform = {
       'tiles-mono': 'The line set',
       'ground-midlands': 'The English model',
       'ground-frost': 'The frozen city',
+      'tiles-frost': 'The winter tiles',
+      'cards-plain': 'The engravings',
+      'cards-frost': 'The winter engravings',
     },
     blurbs: {
       'sign-shrewsbury': 'The merchant’s house on film, the bell and the street’s hum under the pointer.',
@@ -892,6 +896,9 @@ const platform = {
       'tiles-mono': 'Empty slots in black and white, to read the map at a glance.',
       'ground-midlands': 'The Midlands in painted plaster under a raking light, everyone’s board.',
       'ground-frost': 'The Midlands under the ice: a settlement of its trade under every town, the wind, the snow and the furnaces. A ground, not a rule.',
+      'tiles-frost': 'The painted subjects under a dusting of snow, the light a shade colder, a window lit.',
+      'cards-plain': 'The hand’s towns engraved as on the box.',
+      'cards-frost': 'The same plates under snow: white roofs, frozen canals, the boats held fast in the ice.',
     },
   },
   // --- ranking ---
