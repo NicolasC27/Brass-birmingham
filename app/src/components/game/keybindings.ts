@@ -8,14 +8,16 @@ import { useSyncExternalStore } from 'react';
 /* keys stay fixed: they mirror the hand and the camera, not a panel.  */
 /* ------------------------------------------------------------------ */
 
-export type KeyAction = 'undo' | 'replay' | 'fullscreen' | 'links' | 'market' | 'ledger' | 'mat' | 'matWide' | 'matStyle' | 'settings' | 'hand' | 'rules' | 'fit' | 'focus' | 'survey' | 'lastMove' | 'vpTrack' | 'analysis' | 'photo' | 'guide';
-export const KEY_ACTIONS: KeyAction[] = ['undo', 'replay', 'mat', 'matWide', 'matStyle', 'settings', 'market', 'ledger', 'vpTrack', 'hand', 'links', 'focus', 'survey', 'lastMove', 'guide', 'analysis', 'fullscreen', 'photo', 'rules', 'fit'];
+export type KeyAction = 'undo' | 'replay' | 'fullscreen' | 'links' | 'labels' | 'market' | 'ledger' | 'mat' | 'matWide' | 'matStyle' | 'settings' | 'hand' | 'rules' | 'fit' | 'focus' | 'survey' | 'lastMove' | 'vpTrack' | 'analysis' | 'photo' | 'guide';
+export const KEY_ACTIONS: KeyAction[] = ['undo', 'replay', 'mat', 'matWide', 'matStyle', 'settings', 'market', 'ledger', 'vpTrack', 'hand', 'links', 'labels', 'focus', 'survey', 'lastMove', 'guide', 'analysis', 'fullscreen', 'photo', 'rules', 'fit'];
 
 export const DEFAULT_KEYS: Record<KeyAction, string> = {
   undo: 'z',
   replay: 'r',
   fullscreen: 'f',
   links: 'c',
+  /* the names off the table: the cards alone, for a look or a picture */
+  labels: 'n',
   market: 'm',
   ledger: 'l',
   mat: 'p',

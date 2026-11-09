@@ -241,6 +241,7 @@ const game: typeof engame = {
       fs: 'Pantalla completa',
       fullscreen: 'Pantalla completa',
       links: 'Ocultar las conexiones sin construir',
+      labels: 'Ocultar los nombres de las ciudades',
       market: 'Panel del mercado',
       ledger: 'Registro',
       vpTrack: 'Pista de puntos arriba',

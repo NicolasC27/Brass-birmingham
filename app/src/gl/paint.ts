@@ -2,6 +2,7 @@ import { Assets, Container, FillGradient, Graphics, Rectangle, Sprite, Text, Tex
 import { INDUSTRIES, LINKS, MERCHANTS, PLAYER_COLORS, TOWNS } from '@/game/data';
 import { barrelKey } from '@/game/engine';
 import { townColor } from '@/game/townColors';
+import { groundWeather } from '@/components/game/boardOptions';
 import type { VillageStyle } from '@/components/game/boardOptions';
 import { routeFor } from '@/components/game/routePaths';
 import { merchantOpen, tileKey } from '@/game/engine';
@@ -115,6 +116,8 @@ export interface BoardScene {
   setHighlight: (keys: string[] | null, first?: string[] | null) => void;
   /** hide unbuilt link traces (board option, keyboard C) */
   setHideUnbuilt: (hide: boolean) => void;
+  /** the names off the table (board option, keyboard N) */
+  setHideLabels: (hide: boolean) => void;
   /** larger income/VP chips on built tiles (board option) */
   setBigChips: (big: boolean) => void;
   /** grey out merchant bonuses not yet claimed (board option) */
@@ -251,9 +254,13 @@ function pixelsOf(tex: Texture): { c: HTMLCanvasElement; ctx: CanvasRenderingCon
    an ink-and-paper colour, sepia and black-and-white — a lookup where each
    pixel used to pay a Math.pow */
 const TONE_STEPS = 1024;
-const toneTable = (mono: boolean): Uint8ClampedArray => {
-  const ink = mono ? [0x12, 0x10, 0x0e] : [0x2a, 0x21, 0x18];
-  const paper = mono ? [0xf0, 0xec, 0xe2] : [0xbf, 0xa9, 0x82];
+/** the engraving's ink and paper: sepia on parchment, black on white
+ *  (mono), or a cold steel ink on frosted paper for the frozen ground */
+type Tone = 'sepia' | 'mono' | 'cold';
+const toneTable = (kind: Tone): Uint8ClampedArray => {
+  const mono = kind === 'mono';
+  const ink = mono ? [0x12, 0x10, 0x0e] : kind === 'cold' ? [0x1c, 0x24, 0x30] : [0x2a, 0x21, 0x18];
+  const paper = mono ? [0xf0, 0xec, 0xe2] : kind === 'cold' ? [0xb6, 0xc4, 0xd4] : [0xbf, 0xa9, 0x82];
   const t = new Uint8ClampedArray(TONE_STEPS * 3);
   for (let i = 0; i < TONE_STEPS; i++) {
     const raw = i / (TONE_STEPS - 1);
@@ -264,6 +271,7 @@ const toneTable = (mono: boolean): Uint8ClampedArray => {
 };
 let sepiaTone: Uint8ClampedArray | null = null;
 let monoTone: Uint8ClampedArray | null = null;
+let coldTone: Uint8ClampedArray | null = null;
 
 /** Empty slots are PRINTED on the board, built works are physical cards
  *  laid on top (official board: grey printed icons vs. player-colour tiles).
@@ -276,8 +284,9 @@ function engraveTexture(tex: Texture, mono = false): Texture {
   const d = px.img.data;
   /* ink #2a2118 → faded parchment #bfa982, slight gamma so mid-tones stay
      legible; the mono print is black ink on white paper, contrast pushed,
-     for eyes that want the empty slots plainer still */
-  const tone = mono ? (monoTone ??= toneTable(true)) : (sepiaTone ??= toneTable(false));
+     for eyes that want the empty slots plainer still; on the frozen
+     ground the sepia would be the one warm thing: a cold ink instead */
+  const tone = mono ? (monoTone ??= toneTable('mono')) : groundWeather() === 'frost' ? (coldTone ??= toneTable('cold')) : (sepiaTone ??= toneTable('sepia'));
   const k = (TONE_STEPS - 1) / 255;
   for (let i = 0; i < d.length; i += 4) {
     if (d[i + 3] === 0) continue;
@@ -793,29 +802,28 @@ function makeRibbon(labelText: string, cx: number, cy: number, w: number, h: num
   const b = h / 2;
   const plaque = new Graphics();
   plaque.eventMode = 'none';
-  const edge = tint !== undefined ? shade(tint, 0.5) : 0x8a6b33;
-  /* small side hats: wings tucked behind the bar */
-  plaque.poly([l + 3, t + 4, l - 11, t + 7, l - 6, 0, l - 11, b - 1, l + 3, b + 3]).fill(tint !== undefined ? shade(tint, 0.78) : 0xc9b384).stroke({ width: 0.8, color: edge });
-  plaque.poly([r - 3, t + 4, r + 11, t + 7, r + 6, 0, r + 11, b - 1, r - 3, b + 3]).fill(tint !== undefined ? shade(tint, 0.78) : 0xc9b384).stroke({ width: 0.8, color: edge });
-  /* main bar: vertical gradient (parchment, or the town colour) */
-  const bar = new FillGradient({ type: 'linear', start: { x: 0, y: 0 }, end: { x: 0, y: 1 }, textureSpace: 'local' });
-  if (tint !== undefined) {
-    bar.addColorStop(0, shade(tint, 1.12)).addColorStop(0.52, tint).addColorStop(1, shade(tint, 0.8));
-  } else {
-    bar.addColorStop(0, '#F7EFDD').addColorStop(0.52, '#F4ECD8').addColorStop(1, '#DCC99E');
-  }
-  plaque.roundRect(l, t, w, h, 2.5).fill(bar).stroke({ width: 1.1, color: edge, alpha: 0.9 });
-  /* top edge highlight + fold tuck shadows */
-  plaque.moveTo(l + 3, t + 1.6).lineTo(r - 3, t + 1.6).stroke({ width: 0.9, color: 0xfffcf0, alpha: tint !== undefined ? 0.3 : 0.75 });
-  plaque.poly([l + 1, b - 7, l + 1, b + 1, l + 7, b + 1]).fill({ color: tint !== undefined ? shade(tint, 0.62) : 0xa98f5e, alpha: 0.55 });
-  plaque.poly([r - 1, b - 7, r - 1, b + 1, r - 7, b + 1]).fill({ color: tint !== undefined ? shade(tint, 0.62) : 0xa98f5e, alpha: 0.55 });
-  /* engraved small caps; underlay gives the carved relief */
-  const style = { fontFamily: "'IM Fell English SC','Playfair Display',serif", fontSize: RIBBON_FONT, letterSpacing: 1 };
-  const under = new Text({ text: labelText, style: { ...style, fill: tint !== undefined ? shade(tint, 0.35) : 0xfffdf4 } });
+  /* an ink plate: the name in cream small capitals on a dark lacquered
+     bar, the town's own colour kept as a fillet along its top and in the
+     swallowtails, so the colour code still reads without the bar
+     shouting it; a merchant's plate wears brass instead */
+  const hue = tint ?? 0x8a6b33;
+  const edge = shade(hue, 0.55);
+  const dark = new FillGradient({ type: 'linear', start: { x: 0, y: 0 }, end: { x: 0, y: 1 }, textureSpace: 'local' });
+  dark.addColorStop(0, '#2b2622').addColorStop(0.5, '#1d1915').addColorStop(1, '#120f0c');
+  /* the swallowtails, in the colour */
+  plaque.poly([l + 3, t + 4, l - 10, t + 7, l - 5, 0, l - 10, b - 1, l + 3, b + 3]).fill(shade(hue, 0.7)).stroke({ width: 0.7, color: edge });
+  plaque.poly([r - 3, t + 4, r + 10, t + 7, r + 5, 0, r + 10, b - 1, r - 3, b + 3]).fill(shade(hue, 0.7)).stroke({ width: 0.7, color: edge });
+  plaque.roundRect(l, t, w, h, 2).fill(dark).stroke({ width: 0.9, color: shade(hue, 0.85), alpha: 0.9 });
+  /* the fillet of colour along the top, and a thin light under it */
+  plaque.rect(l + 1, t + 1, w - 2, 2.2).fill({ color: hue, alpha: 0.95 });
+  plaque.moveTo(l + 2, t + 3.8).lineTo(r - 2, t + 3.8).stroke({ width: 0.6, color: 0xfff6dc, alpha: 0.18 });
+  /* the small capitals, with a shadow for relief */
+  const style = { fontFamily: "'IM Fell English SC','Playfair Display',serif", fontSize: RIBBON_FONT, letterSpacing: 1.2 };
+  const under = new Text({ text: labelText, style: { ...style, fill: 0x000000 } });
   under.anchor.set(0.5);
-  under.position.set(0, 1.1);
-  under.alpha = tint !== undefined ? 0.8 : 0.6;
-  const label = new Text({ text: labelText, style: { ...style, fill: tint !== undefined ? 0xf7efdd : 0x2a241c } });
+  under.position.set(0, 1.6);
+  under.alpha = 0.7;
+  const label = new Text({ text: labelText, style: { ...style, fill: 0xf1e6c8 } });
   label.anchor.set(0.5);
   under.eventMode = 'none';
   label.eventMode = 'none';
@@ -940,9 +948,14 @@ export function buildBoardScene(bgCanal: Container, bgRail: Container, etchCanal
     /* the row's own shadow on the ground, then the shelves — a parchment
        recess for each tile, like a town's empty card — and the medallion:
        a brass disc with a beaded rim, seated on the ground */
+    /* the row stands on a quay of dressed stone: a dark slab with a
+       lighter coping along its top and its shadow on the land, so the
+       tiles and the medallion read as set on the place, not on the HUD */
     const under = new Graphics();
     under.eventMode = 'none';
-    under.roundRect(-rowW / 2 - 1, -MT / 2 + 1, rowW + 8, MT + 8, 8).fill({ color: 0x1e160e, alpha: 0.26 });
+    under.roundRect(-rowW / 2 + 1, -MT / 2 + 4, rowW + 8, MT + 8, 7).fill({ color: 0x0e0b09, alpha: 0.4 });
+    under.roundRect(-rowW / 2 - 2, -MT / 2 - 1, rowW + 10, MT + 9, 7).fill({ color: 0x4a4440, alpha: 0.78 }).stroke({ width: 0.9, color: 0x1a1613, alpha: 0.8 });
+    under.rect(-rowW / 2 - 1, -MT / 2, rowW + 8, 1.6).fill({ color: 0x8a847c, alpha: 0.55 });
     const shelf = new Graphics();
     shelf.eventMode = 'none';
     for (const x of slotX) {
@@ -1292,30 +1305,24 @@ export function buildBoardScene(bgCanal: Container, bgRail: Container, etchCanal
         }
         if (furrow <= 0) continue;
         const railStyle = game.era === 'rail' ? def.rail : !def.canal;
-        if (railStyle && game.era === 'rail') {
-          /* the railway itself is painted into the rail-era map (ballast,
-             sleepers, steel): the trace only lifts it — a faint dark bed
-             for readability over the mist, a steel glint down the middle */
+        /* the ground already carries every route — the survey layer, the
+           valleys carved into the model, the ice channels — so the trace
+           over it is a hairline: a thin dark bed and one fine line, water
+           or steel, enough to say where a link may go and no more */
+        if (railStyle) {
           tracePath(g, pts);
-          g.stroke({ width: 9, color: 0x0c0e0e, alpha: furrow * 0.35, cap: 'round', join: 'round' });
+          g.stroke({ width: 3.6, color: 0x0c0e0e, alpha: furrow * 0.4, cap: 'round', join: 'round' });
+          if (game.era !== 'rail') {
+            traceDashes(g, pts, 1.6, 6);
+            g.stroke({ width: 2.6, color: 0x6b5138, alpha: furrow * 0.7 });
+          }
           tracePath(g, pts);
-          g.stroke({ width: 2, color: 0xb4bcc2, alpha: furrow * 0.5, cap: 'round', join: 'round' });
-        } else if (railStyle) {
-          /* railway survey: dark ballast bed, sleeper dashes, steel centre */
-          tracePath(g, pts);
-          g.stroke({ width: 11, color: 0x241d16, alpha: furrow, cap: 'round', join: 'round' });
-          traceDashes(g, pts, 2.2, 7);
-          g.stroke({ width: 7, color: 0x6b5138, alpha: furrow * 0.85 });
-          tracePath(g, pts);
-          g.stroke({ width: 3.2, color: 0x8e969e, alpha: furrow * 0.6, join: 'round' });
+          g.stroke({ width: 1.3, color: 0xb4bcc2, alpha: furrow * 0.75, cap: 'round', join: 'round' });
         } else {
-          /* canal survey: continuous ribbon of still water + light sheen */
           tracePath(g, pts);
-          g.stroke({ width: 8, color: 0x0e0c09, alpha: furrow * 0.55, cap: 'round', join: 'round' });
+          g.stroke({ width: 3.6, color: 0x0e0c09, alpha: furrow * 0.45, cap: 'round', join: 'round' });
           tracePath(g, pts);
-          g.stroke({ width: 3.85, color: 0x4a7a8c, alpha: Math.min(0.6, furrow), cap: 'round', join: 'round' });
-          tracePath(g, pts);
-          g.stroke({ width: 1.2, color: 0x8fb8c4, alpha: 0.5, cap: 'round', join: 'round' });
+          g.stroke({ width: 1.4, color: 0x8fb8c4, alpha: Math.min(0.8, furrow + 0.2), cap: 'round', join: 'round' });
         }
         /* board option (key C): every unbuilt trace hidden, water included —
            the relief ground serves its routes on a layer hidden with them,
@@ -1324,42 +1331,35 @@ export function buildBoardScene(bgCanal: Container, bgRail: Container, etchCanal
       } else {
         const col = playerHex(game, built.owner);
         const shape = PLAYER_COLORS[game.players[built.owner].color]?.shape ?? 'circle';
-        /* owner glow */
+        /* owner glow, narrow: the line is read by its colour, not its width */
         tracePath(g, pts);
-        g.stroke({ width: 22, color: col, alpha: 0.3, cap: 'round', join: 'round' });
+        g.stroke({ width: 13, color: col, alpha: 0.22, cap: 'round', join: 'round' });
         if (built.era === 'rail') {
-          /* steam-era track: dark ballast, visible sleepers, twin bright
-             steel rails split by a dark groove, rail-top glint */
+          /* steam-era track, slim: a dark bed, the owner's ballast, fine
+             sleepers, twin pale rails on it */
           tracePath(g, pts);
-          g.stroke({ width: 16, color: 0x0e0b09, cap: 'round', join: 'round' });
-          /* RAIL = one hue, the owner's: dark shade for the sleepers, a pale
-             shade for the twin rails, the base colour for the ballast */
+          g.stroke({ width: 10, color: 0x0e0b09, cap: 'round', join: 'round' });
           tracePath(g, pts);
-          g.stroke({ width: 13, color: col, join: 'round' });
-          traceDashes(g, pts, 2.4, 8);
-          g.stroke({ width: 9.5, color: shade(col, 0.35), alpha: 0.85 });
+          g.stroke({ width: 8, color: col, join: 'round' });
+          traceDashes(g, pts, 1.8, 7);
+          g.stroke({ width: 6, color: shade(col, 0.35), alpha: 0.85 });
           tracePath(g, pts);
-          g.stroke({ width: 4.6, color: tint(col, 0.55), alpha: 0.95, join: 'round' });
+          g.stroke({ width: 3, color: tint(col, 0.55), alpha: 0.95, join: 'round' });
           tracePath(g, pts);
-          g.stroke({ width: 1.4, color: shade(col, 0.5), join: 'round' });
-          traceDashes(g, pts, 1.2, 15.8, -2);
-          g.stroke({ width: 4.6, color: 0xffffff, alpha: 0.35 });
+          g.stroke({ width: 0.9, color: shade(col, 0.5), join: 'round' });
+          traceDashes(g, pts, 1, 15.8, -2);
+          g.stroke({ width: 3, color: 0xffffff, alpha: 0.3 });
         } else {
-          /* wide waterway: earthen banks, deep green water, owner liseré */
+          /* a slim waterway: dark banks, the owner's water, a darker
+             channel and one unbroken sheen down the middle */
           tracePath(g, pts);
-          g.stroke({ width: 20, color: 0x14100b, alpha: 0.95, cap: 'round', join: 'round' });
+          g.stroke({ width: 11, color: 0x14100b, alpha: 0.9, cap: 'round', join: 'round' });
           tracePath(g, pts);
-          g.stroke({ width: 18, color: 0x8a6b33, alpha: 0.22, join: 'round' });
-          /* CANAL = one hue, the owner's: a darker channel down the middle
-             and a pale ripple line — reads as water, never as green */
+          g.stroke({ width: 8, color: col, cap: 'round', join: 'round' });
           tracePath(g, pts);
-          g.stroke({ width: 15, color: col, cap: 'round', join: 'round' });
+          g.stroke({ width: 3.2, color: shade(col, 0.45), alpha: 0.9, join: 'round' });
           tracePath(g, pts);
-          g.stroke({ width: 6, color: shade(col, 0.45), alpha: 0.9, join: 'round' });
-          /* one unbroken sheen: dashes here read as sleepers, and a canal
-             in the owner's colour was taken for a railway */
-          tracePath(g, pts);
-          g.stroke({ width: 1.4, color: tint(col, 0.6), alpha: 0.6, cap: 'round', join: 'round' });
+          g.stroke({ width: 1, color: tint(col, 0.6), alpha: 0.65, cap: 'round', join: 'round' });
         }
         /* colour-blind mode: owner medallion seated mid-route (brass rim +
            colour + shape) — otherwise the owner's hue on the route is enough */
@@ -1812,6 +1812,9 @@ export function buildBoardScene(bgCanal: Container, bgRail: Container, etchCanal
         drawLinks(lastGame);
         applySpotlight(lastGame);
       }
+    },
+    setHideLabels(hide) {
+      ribbonsLayer.visible = !hide;
     },
     setVillages(style, ground) {
       villageStyle = style;

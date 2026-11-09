@@ -494,3 +494,18 @@ can be seen on the table before it is bought: "Voir sur la table"
 (`brassworks.tryon` in sessionStorage) and opens a table; the ground,
 the tile variant and the card plates read the trial as they read the
 frozen ground.
+
+### The map, finer
+
+Asked whether the routes could be finer and whether the traces between
+the towns were needed at all: the ground already carries every route
+(the survey layer, the valleys carved into the model, the ice channels),
+so the trace Pixi lays over it is now a hairline — a thin dark bed and
+one fine line of water or steel — and a built link a slim ribbon in its
+owner's colour (half its old width), read by its colour rather than its
+bulk. The towns' ribbons became ink plates: cream small capitals on a
+dark lacquered bar, the town's colour kept as a fillet along the top and
+in the swallowtails; the merchants' rows stand on a quay of dressed
+stone rather than a shadow; the empty slots are engraved in a cold steel
+ink on the frozen ground (`toneTable('cold')`); the apron's far haze
+leans toward the table's felt; and key N takes the names off the table.

@@ -177,6 +177,8 @@ export function aidOn(assist: boolean | undefined, online: boolean): boolean {
 
 export interface BoardOptions {
   hideUnbuilt: boolean;
+  /** the names off the table (key N): the cards alone */
+  hideLabels: boolean;
   bigChips: boolean;
   greyFreeMerchants: boolean;
   stockStyle: StockStyle;
@@ -245,6 +247,7 @@ export interface BoardOptions {
 
 const KEYS: Record<Exclude<keyof BoardOptions, 'settingsOpen'>, string> = {
   hideUnbuilt: 'brassworks.hideUnbuiltLinks',
+  hideLabels: 'brassworks.hideLabels',
   bigChips: 'brassworks.bigChips',
   greyFreeMerchants: 'brassworks.greyFreeMerchants',
   stockStyle: 'brassworks.stockStyle',
@@ -311,6 +314,7 @@ function level(k: 'volAmbience' | 'volGestures' | 'volMoments' | 'volMusic', fal
 
 let state: BoardOptions = {
   hideUnbuilt: read('hideUnbuilt', false),
+  hideLabels: read('hideLabels', false),
   bigChips: read('bigChips', true),
   greyFreeMerchants: read('greyFreeMerchants', false),
   /* the corner disc, the v3 tiles and the single band are the table's own

@@ -241,6 +241,7 @@ const fr: typeof engame = {
       fs: 'Plein écran',
       fullscreen: 'Plein écran',
       links: 'Masquer les liaisons non construites',
+      labels: 'Masquer les noms des villes',
       market: 'Panneau du marché',
       ledger: 'Registre',
       vpTrack: 'Piste des points en haut',

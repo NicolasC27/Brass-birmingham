@@ -239,6 +239,7 @@ const game = {
       fs: 'Fullscreen',
       fullscreen: 'Fullscreen',
       links: 'Hide unbuilt links',
+      labels: 'Hide the town names',
       market: 'Market panel',
       ledger: 'Ledger',
       vpTrack: 'Points track along the top',

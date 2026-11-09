@@ -496,7 +496,7 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
   /* board display options — shared store (also driven from the settings
      panel in Game.tsx); C hides unbuilt link traces, F fullscreen */
   const opts = useBoardOptions();
-  const { hideUnbuilt, bigChips, greyFreeMerchants: greyFreeMerch, stockStyle, traffic, tileArt, slotArt, colorBlind, sealTiles, sealLinks, cardGrain, chipStyle, sound } = opts;
+  const { hideUnbuilt, hideLabels, bigChips, greyFreeMerchants: greyFreeMerch, stockStyle, traffic, tileArt, slotArt, colorBlind, sealTiles, sealLinks, cardGrain, chipStyle, sound } = opts;
   /* the house's own sound while the pointer rests on it: its recording in
      a loop, or a bell over the door (board option) — hushed at once when
      the sound is turned off under the pointer */
@@ -578,6 +578,9 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
   useEffect(() => {
     sceneRef.current?.setHideUnbuilt(hideUnbuilt);
   }, [hideUnbuilt]);
+  useEffect(() => {
+    sceneRef.current?.setHideLabels(hideLabels);
+  }, [hideLabels]);
   useEffect(() => {
     sceneRef.current?.setBigChips(bigChips);
   }, [bigChips]);
@@ -856,7 +859,10 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
            drowned in the painting's own haze, clear at the edge, thick a
            bleed further on */
         const { r, g, b } = edgeHaze(tex);
-        const haze = (a: number) => ({ r, g, b, a });
+        /* the far haze leans toward the table's own dark felt, so the
+           apron sinks into the table rather than glowing round it */
+        const felt = { r: 0x14, g: 0x12, b: 0x10 };
+        const haze = (a: number, toFelt = 0) => ({ r: Math.round(r + (felt.r - r) * toFelt), g: Math.round(g + (felt.g - g) * toFelt), b: Math.round(b + (felt.b - b) * toFelt), a });
         const outer = { x: BLEED_X + APRON_X, y: BLEED_Y + APRON_Y };
         const mist = new Graphics();
         for (const [x, y, w, h, from, to] of [
@@ -866,7 +872,7 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
           [-outer.x, -outer.y, APRON_X, WORLD_H + 2 * outer.y, { x: 1, y: 0 }, { x: 0, y: 0 }],
         ] as const) {
           const fade = new FillGradient({ type: 'linear', start: from, end: to, textureSpace: 'local' });
-          fade.addColorStop(0, haze(0)).addColorStop(0.5, haze(0.85)).addColorStop(1, haze(1));
+          fade.addColorStop(0, haze(0)).addColorStop(0.45, haze(0.85, 0.1)).addColorStop(1, haze(1, 0.5));
           mist.rect(x, y, w, h).fill(fade);
         }
         mist.eventMode = 'none';
@@ -1657,6 +1663,7 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
         else if (e.key === '-' || e.key === '_') cam.zoomStep(1 / 1.35);
         else if (isKey(e, 'fit')) cam.fit();
         else if (isKey(e, 'links')) setBoardOption('hideUnbuilt', !getBoardOptions().hideUnbuilt);
+        else if (isKey(e, 'labels')) setBoardOption('hideLabels', !getBoardOptions().hideLabels);
         else if (isKey(e, 'fullscreen')) fsRef.current();
         else return;
         e.preventDefault();

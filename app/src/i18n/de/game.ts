@@ -241,6 +241,7 @@ const game: typeof engame = {
       fs: 'Vollbild',
       fullscreen: 'Vollbild',
       links: 'Ungebaute Verbindungen ausblenden',
+      labels: 'Ortsnamen ausblenden',
       market: 'Marktpanel',
       ledger: 'Register',
       vpTrack: 'Punkteleiste oben',
