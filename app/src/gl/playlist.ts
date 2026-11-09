@@ -41,6 +41,9 @@ export const LIFE_GAP: readonly [number, number] = [40, 120];
 export const LIFE = {
   canal: ['life-horse', 'life-lock', 'life-forge', 'life-bell', 'life-geese'],
   rail: ['life-whistle', 'life-passing', 'life-couple', 'life-depart', 'life-hammer', 'life-steam'],
+  /* the frozen city, in either era: the ice far off, a sledge going by, a
+     works' horn in the storm, men breaking the river ice */
+  frost: ['life-ice', 'life-sledge', 'life-horn', 'life-pick'],
 } as const;
 export type Life = (typeof LIFE)[keyof typeof LIFE][number];
 

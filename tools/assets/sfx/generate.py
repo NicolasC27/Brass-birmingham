@@ -107,6 +107,12 @@ PLAN = {
     'amb-rail': (30.0, 4, 0.5, True, 'a quiet green valley on a still grey afternoon, a light breeze in long grass, a few rooks calling far away, now and then a faint far-off clink of iron, long quiet gaps between sounds, sparse and calm, clean quiet recording with a very low noise floor, no hum, no drone, no rumble, no engine, no traffic, no voices, continuous, ' + ERA),
     # the rail's life: now and then, over its ambience, a train somewhere off
     # take 1 gave one blast where two were asked (seventh round: asked again)
+    # the frozen city's life (the counter's ground-frost): the ice far off,
+    # a sledge going by, a horn in the storm, men breaking ice
+    'life-ice': (6.0, 1, 0.5, False, 'thick lake ice cracking and booming far away across a frozen plain in the still cold: one deep groaning crack that rolls and echoes, then a sharp distant snap, outdoors, no wind noise on the microphone, no voices, ' + ERA),
+    'life-sledge': (8.0, 1, 0.5, False, 'a heavy horse pulling a loaded wooden sledge on packed snow passing at a short distance: muffled hooves on snow, the iron runners hissing and creaking, a harness bell jingling faintly, coming closer, passing, and fading away, calm, outdoors, no voices, ' + ERA),
+    'life-horn': (5.0, 1, 0.5, False, 'a deep steam horn of a works blown once, far away across a frozen plain, long and low, its echo rolling off the ice, faint, outdoors, no voices, ' + ERA),
+    'life-pick': (6.0, 1, 0.5, False, 'men breaking river ice with iron picks and shovels heard from across the snow: slow rhythmic chips and cracks of ice, a shovel scraping, a block of ice falling into water, distant, outdoors, no voices, ' + ERA),
     'life-whistle': (4.0, 1, 0.55, False, ['a steam locomotive whistle blown twice, a short blast then a long one, very far away across open fields, faint, with a soft echo off the hills, outdoors, ' + ERA,
                                            WHISTLE + 'very far away across fields, faint, a soft echo off the hills, ' + ERA,
                                            # take 2: one blast of 2.4 s again

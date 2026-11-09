@@ -781,6 +781,19 @@ function windBed(ac: AudioContext): { src: AudioBufferSourceNode; gain: GainNode
   };
 }
 
+/** the storm over a frozen ground, 0 to 1: the wind heard rising with
+ *  it, up to twice its level, and falling back */
+let stormLevel = 0;
+export function windStorm(level: number): void {
+  const l = Math.min(1, Math.max(0, level));
+  if (Math.abs(l - stormLevel) < 0.01) return;
+  stormLevel = l;
+  if (!table || table.bed !== 'frost') return;
+  const ac = table.src.context;
+  const base = table.stop ? WIND_TRIM : AMB_TRIM.frost;
+  table.gain.gain.setTargetAtTime(base * (1 + 1.1 * l), ac.currentTime, 0.8);
+}
+
 function applyAmbience(): void {
   applyLife();
   const bed = mix.on && mix.ambience ? wantBed : null;
@@ -823,7 +836,7 @@ const chance: Chance = () => Math.random();
  *  LUFS); under the canal's birds (-22 LUFS), whose band it leaves free */
 const LIFE_LEVEL: Record<'canal' | 'rail', number> = { canal: 2, rail: 1.4 };
 /** the events that go by, from one side to the other */
-const CROSSING: readonly Life[] = ['life-passing', 'life-geese'];
+const CROSSING: readonly Life[] = ['life-passing', 'life-geese', 'life-sledge'];
 let life: { era: 'canal' | 'rail'; name: Life; src: AudioBufferSourceNode; gain: GainNode } | null = null;
 /** the wait for the next event */
 let lifeTimer: ReturnType<typeof setTimeout> | null = null;
@@ -878,7 +891,8 @@ function playLife(): void {
     waitLife(at - now);
     return;
   }
-  soundLife(era, nextOf<Life>(LIFE[era], lastLife, chance), false);
+  /* on the frozen ground the cold's own events, whatever the era */
+  soundLife(era, nextOf<Life>(LIFE[wantBed === 'frost' ? 'frost' : era], lastLife, chance), false);
 }
 
 /** an event heard now: the one the scheduler drew, or (`forced`) one asked

@@ -999,3 +999,13 @@ to its line): 22 of 28 word for word, four off by spelling alone
 warmest spot" for "Mill's", and Mrs Blewitt adding a "Look" the bubble
 does not show. Both asked twice more; takes 2 and 3 came back word for
 word each time, the second kept.
+
+## The frozen city's life (2026-11-06)
+
+Four events for the frozen ground, heard over the wind in either era in
+place of the eras' own (`LIFE.frost` in playlist.ts): the ice booming far
+off (`life-ice`), a sledge going by with its harness bell (`life-sledge`,
+crossing the valley like the train and the geese), a works' horn in the
+storm (`life-horn`, which came back at -6.7 LUFS and is brought down 18
+dB), men breaking the river ice (`life-pick`). One take each, ~300
+credits in all, levelled with the canal's life at -27 LUFS.

@@ -149,6 +149,12 @@ SHORT = {
     # the canal's life, heard over its birds: the same distance as the rail's
     # a horse on the towpath: hooves and harness for 4.5 s, then going
     'life-horse': ('life-horse-1', (0.0, 5.5), 'highpass=f=90,lowpass=f=6000,', PEAK, {'fade': 1.2, 'fadein': 0.3, 'dehum': True, 'lufs': -27}),
+    # the frozen city's life (the counter's ground-frost), levelled with the
+    # canal's; the horn came back loud (-6.7 LUFS) and is brought down like the rest
+    'life-ice': ('life-ice-1', (0.0, 6.0), 'highpass=f=40,lowpass=f=6000,', PEAK, {'fade': 1.0, 'fadein': 0.2, 'dehum': True, 'lufs': -27}),
+    'life-sledge': ('life-sledge-1', (0.0, 8.0), 'highpass=f=90,lowpass=f=7000,', PEAK, {'fade': 1.2, 'fadein': 0.4, 'dehum': True, 'lufs': -27}),
+    'life-horn': ('life-horn-1', (0.0, 5.0), 'highpass=f=50,lowpass=f=3000,', PEAK, {'fade': 1.2, 'fadein': 0.1, 'dehum': True, 'lufs': -28}),
+    'life-pick': ('life-pick-1', (0.0, 6.0), 'highpass=f=90,lowpass=f=6000,', PEAK, {'fade': 1.0, 'fadein': 0.2, 'dehum': True, 'lufs': -27}),
     # a lock: the gates' creak, then the sluice for 4 s; the take stops the
     # water short at 4.25 s, so it is faded over its last second
     'life-lock': ('life-lock-1', (0.0, 4.3), 'highpass=f=90,lowpass=f=6000,', PEAK, {'fade': 1.0, 'dehum': True, 'lufs': -27}),

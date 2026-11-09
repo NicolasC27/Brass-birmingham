@@ -256,3 +256,7 @@
 {"take": "bark-nellie-warmest-3", "seconds": 0.0, "before": 61965, "after": 61965, "spent": 0}
 {"take": "bark-hepzibah-warm-2", "seconds": 0.0, "before": 61965, "after": 61965, "spent": 0}
 {"take": "bark-hepzibah-warm-3", "seconds": 0.0, "before": 61965, "after": 61987, "spent": 22}
+{"take": "life-ice-1", "seconds": 6.0, "before": 62015, "after": 62015, "spent": 0}
+{"take": "life-sledge-1", "seconds": 8.0, "before": 62015, "after": 62015, "spent": 0}
+{"take": "life-horn-1", "seconds": 5.0, "before": 62015, "after": 62224, "spent": 209}
+{"take": "life-pick-1", "seconds": 6.0, "before": 62224, "after": 62224, "spent": 0}
