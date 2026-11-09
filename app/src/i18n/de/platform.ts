@@ -1043,6 +1043,7 @@ const platform: typeof enPlatform = {
     titles: {
       forges: "Die Hütten von Coalbrookdale",
       noBanker: "Ohne Bankier",
+      winter: "Der Winter 1847",
       burton: "Der Brauer von Burton",
       manchesterLine: "Die Linie nach Manchester",
       staffordshire: "Töpfereien von Staffordshire",
@@ -1053,6 +1054,7 @@ const platform: typeof enPlatform = {
     stories: {
       forges: "Shropshire verlangt Eisen, und der Bankier leiht nur einmal. Zwei Hütten der Stufe drei, und der Sieg.",
       noBanker: "Keinen Shilling geliehen die ganze Partie, acht Verbindungen gelegt, und der erste Platz. Die Vorsichtigen gewinnen nie — beweisen Sie das Gegenteil.",
+      winter: "Der Frost hat die Kanäle genommen, die Stadt heizt mit Kohle. Die gefrorene Stadt wird allen für die Woche geliehen: zwei verkaufte Zechen der Stufe zwei, sechs Verbindungen auf dem Eis, höchstens ein Darlehen, und der erste Platz.",
       burton: "Vier Brauereien umgedreht, ein Einkommen von zwanzig am Schluss, und der Tisch geschlagen. Burton sah nie so viel Bier.",
       manchesterLine: "Acht Schienen in der Eisenbahnzeit, drei davon doppelt gelegt, und der erste Platz. Ein Netz, keine Sammlung.",
       staffordshire: "Zwei Töpfereien in der Kanalzeit verkauft, eine Töpferei der Stufe vier umgedreht, und hundertvierzig Punkte. Mrs Wedgwood sieht zu.",

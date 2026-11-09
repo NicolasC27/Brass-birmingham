@@ -1041,6 +1041,7 @@ const platform = {
     titles: {
       forges: "Les forges de Coalbrookdale",
       noBanker: "Sans banquier",
+      winter: "L’hiver de 1847",
       burton: "Le brasseur de Burton",
       manchesterLine: "La ligne de Manchester",
       staffordshire: "Poteries du Staffordshire",
@@ -1051,6 +1052,7 @@ const platform = {
     stories: {
       forges: "Le Shropshire réclame du fer, et le banquier ne prête qu’une fois. Deux forges de niveau trois, et la victoire.",
       noBanker: "Pas un shilling emprunté de toute la partie, huit liaisons posées, et le premier rang. Les prudents ne gagnent jamais — prouvez le contraire.",
+      winter: "Le gel a pris les canaux et la ville se chauffe au charbon. La cité gelée est prêtée à tous pour la semaine : deux mines de niveau deux vendues, six liaisons sur la glace, un seul emprunt, et le premier rang.",
       burton: "Quatre brasseries retournées, un revenu de vingt à la fin, et la table battue. Burton n’a jamais vu autant de bière.",
       manchesterLine: "Huit rails à l’ère du rail, dont trois poses doubles, et la première place. Un réseau, pas une collection.",
       staffordshire: "Deux poteries vendues à l’ère du canal, une poterie de niveau quatre retournée, et cent quarante points. Mrs Wedgwood regarde.",

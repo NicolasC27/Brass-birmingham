@@ -1041,6 +1041,7 @@ const platform = {
     titles: {
       forges: "Las fraguas de Coalbrookdale",
       noBanker: "Sin banquero",
+      winter: "El invierno de 1847",
       burton: "El cervecero de Burton",
       manchesterLine: "La línea de Manchester",
       staffordshire: "Alfarerías de Staffordshire",
@@ -1051,6 +1052,7 @@ const platform = {
     stories: {
       forges: "Shropshire pide hierro, y el banquero presta una sola vez. Dos fraguas de nivel tres, y la victoria.",
       noBanker: "Ni un chelín prestado en toda la partida, ocho enlaces, y el primer puesto. Los prudentes nunca ganan — demuestre lo contrario.",
+      winter: "La helada se ha llevado los canales y la ciudad se calienta con carbón. La ciudad helada se presta a todos por una semana: dos minas de nivel dos vendidas, seis enlaces sobre el hielo, un préstamo como mucho, y el primer puesto.",
       burton: "Cuatro cervecerías volteadas, ingreso de veinte al cierre, y la mesa vencida. Burton nunca vio tanta cerveza.",
       manchesterLine: "Ocho raíles en la era del ferrocarril, tres de ellos dobles, y el primer puesto. Una red, no una colección.",
       staffordshire: "Dos alfarerías vendidas en la era del canal, una de nivel cuatro volteada, y ciento cuarenta puntos. Mrs Wedgwood observa.",

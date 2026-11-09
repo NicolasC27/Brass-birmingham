@@ -35,6 +35,9 @@ export type Rule =
 
 export interface ChallengeDef {
   id: string;
+  /** the ground the table is dressed in for the week: the frozen city,
+   *  lent to everyone for the notice (nothing else is lent) */
+  ground?: 'frost';
   /** the machines across the table, in seat order */
   rivals: BotPersona[];
   options: StoredSetup['options'];
@@ -85,6 +88,13 @@ export const CHALLENGES: ChallengeDef[] = [
     rivals: ['watt', 'wedgwood'],
     options: { eraLength: 'short', marketTemper: 'standard', timerMinutes: null, fidelity: 'core' },
     rules: [{ kind: 'win' }, { kind: 'links', min: 10 }, { kind: 'money', min: 30 }],
+  },
+  {
+    id: 'winter',
+    ground: 'frost',
+    rivals: ['watt', 'arkwright', 'boulton'],
+    options: { eraLength: 'standard', marketTemper: 'volatile', timerMinutes: null, fidelity: 'core' },
+    rules: [{ kind: 'win' }, { kind: 'industry', industry: 'coal', level: 2, count: 2, sold: true }, { kind: 'links', min: 6, era: 'canal' }, { kind: 'loans', max: 1 }],
   },
   {
     id: 'boxes',
@@ -157,6 +167,8 @@ export async function startChallenge(c: Challenge, me: string): Promise<string> 
   };
   try {
     localStorage.setItem(SETUP_STORAGE_KEY, JSON.stringify(setup));
+    /* the frozen city lent for the week: the tab wears it as a trial */
+    if (c.ground === 'frost') sessionStorage.setItem('brassworks.ground.trial', 'city');
   } catch {
     /* storage unavailable — the game page falls back to its default table */
   }

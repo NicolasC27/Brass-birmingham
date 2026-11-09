@@ -1041,6 +1041,7 @@ const platform = {
     titles: {
       forges: "The Coalbrookdale forges",
       noBanker: "Without the banker",
+      winter: "The winter of 1847",
       burton: "The brewer of Burton",
       manchesterLine: "The Manchester line",
       staffordshire: "Staffordshire potteries",
@@ -1051,6 +1052,7 @@ const platform = {
     stories: {
       forges: "Shropshire wants iron, and the banker lends once. Two level-three iron works, and the win.",
       noBanker: "Not a shilling borrowed all game, eight links laid, and first place. The careful never win — prove otherwise.",
+      winter: "The frost has taken the canals and the city heats on coal. The frozen city is lent to everyone for the week: two level-two collieries sold, six links on the ice, one loan at most, and first place.",
       burton: "Four breweries flipped, an income of twenty at the close, and the table beaten. Burton never saw so much beer.",
       manchesterLine: "Eight rails in the Rail Era, three of them doubled, and first place. A network, not a collection.",
       staffordshire: "Two potteries sold in the Canal Era, a level-four pottery flipped, and a hundred and forty points. Mrs Wedgwood is watching.",
