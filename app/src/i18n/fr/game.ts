@@ -868,7 +868,7 @@ const fr: typeof engame = {
     title: 'Photo',
     toolbarAria: 'Mode photo',
     looksAria: 'L’aspect du tirage',
-    look: { none: 'Aucun', sepia: 'Gravure sépia', aquarelle: 'Aquarelle', nuit: 'Nuit' },
+    look: { none: 'Aucun', sepia: 'Gravure sépia', aquarelle: 'Aquarelle', nuit: 'Nuit', blizzard: 'Blizzard' },
     labels: 'Noms et chiffres',
     labelsHide: 'Masquer les noms des villes et les chiffres des tuiles',
     labelsShow: 'Afficher les noms des villes et les chiffres des tuiles',

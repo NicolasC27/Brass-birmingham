@@ -48,6 +48,7 @@ const SWATCH: Record<PhotoLook, string> = {
   sepia: 'radial-gradient(circle at 35% 30%, #f1e2c2, #9a7348 60%, #3a2616)',
   aquarelle: 'radial-gradient(circle at 30% 30%, #fbf7ee 10%, #b9d3c4 40%, #e6b8a0 70%, #f4ead8)',
   nuit: 'radial-gradient(circle at 62% 38%, #ffcf7a 0 12%, #2a3c62 30%, #0b1224 80%)',
+  blizzard: 'linear-gradient(160deg, #eef3fa 0 18%, #9fb4cc 40%, #5d7390 70%, #dfe8f3 100%)',
 };
 
 /** how the signature is inked on each look: the ink, the light under it,
@@ -57,6 +58,7 @@ const INKS: Record<PhotoLook, { ink: string; rule: string; emboss?: string; halo
   sepia: { ink: 'rgba(48,30,16,0.9)', rule: 'rgba(48,30,16,0.55)', emboss: 'rgba(252,244,224,0.6)', paper: '243,233,206' },
   aquarelle: { ink: 'rgba(72,58,46,0.85)', rule: 'rgba(72,58,46,0.45)', paper: '251,248,241' },
   nuit: { ink: 'rgba(232,202,140,0.95)', rule: 'rgba(232,202,140,0.6)', halo: 'rgba(4,7,16,0.9)' },
+  blizzard: { ink: 'rgba(28,38,56,0.92)', rule: 'rgba(28,38,56,0.5)', paper: '232,240,250' },
 };
 
 /** the signature engraved in the print's corner: the name in the house's

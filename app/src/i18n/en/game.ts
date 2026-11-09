@@ -866,7 +866,7 @@ const game = {
     title: 'Photo',
     toolbarAria: 'Photo mode',
     looksAria: 'The look of the print',
-    look: { none: 'None', sepia: 'Sepia engraving', aquarelle: 'Watercolour', nuit: 'Night' },
+    look: { none: 'None', sepia: 'Sepia engraving', aquarelle: 'Watercolour', nuit: 'Night', blizzard: 'Blizzard' },
     labels: 'Names and figures',
     labelsHide: 'Hide the towns’ names and the figures on the cards',
     labelsShow: 'Show the towns’ names and the figures on the cards',

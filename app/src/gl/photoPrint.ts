@@ -6,8 +6,8 @@
 import type { Era } from '@/game/types';
 
 /** the looks a photograph may be printed in */
-export type PhotoLook = 'none' | 'sepia' | 'aquarelle' | 'nuit';
-export const PHOTO_LOOKS: readonly PhotoLook[] = ['none', 'sepia', 'aquarelle', 'nuit'];
+export type PhotoLook = 'none' | 'sepia' | 'aquarelle' | 'nuit' | 'blizzard';
+export const PHOTO_LOOKS: readonly PhotoLook[] = ['none', 'sepia', 'aquarelle', 'nuit', 'blizzard'];
 
 export const isPhotoLook = (v: unknown): v is PhotoLook => typeof v === 'string' && (PHOTO_LOOKS as readonly string[]).includes(v);
 

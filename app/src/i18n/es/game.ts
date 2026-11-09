@@ -868,7 +868,7 @@ const game: typeof engame = {
     title: 'Foto',
     toolbarAria: 'Modo foto',
     looksAria: 'El aspecto de la impresión',
-    look: { none: 'Ninguno', sepia: 'Grabado sepia', aquarelle: 'Acuarela', nuit: 'Noche' },
+    look: { none: 'Ninguno', sepia: 'Grabado sepia', aquarelle: 'Acuarela', nuit: 'Noche', blizzard: 'Ventisca' },
     labels: 'Nombres y cifras',
     labelsHide: 'Ocultar los nombres de las ciudades y las cifras de las losetas',
     labelsShow: 'Mostrar los nombres de las ciudades y las cifras de las losetas',

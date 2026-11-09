@@ -54,7 +54,7 @@ describe('the print', () => {
   });
 
   it('knows its looks', () => {
-    expect([...PHOTO_LOOKS]).toEqual(['none', 'sepia', 'aquarelle', 'nuit']);
+    expect([...PHOTO_LOOKS]).toEqual(['none', 'sepia', 'aquarelle', 'nuit', 'blizzard']);
     expect(isPhotoLook('aquarelle')).toBe(true);
     expect(isPhotoLook('polaroid')).toBe(false);
     expect(isPhotoLook(undefined)).toBe(false);

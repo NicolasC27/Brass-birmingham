@@ -868,7 +868,7 @@ const game: typeof engame = {
     title: 'Foto',
     toolbarAria: 'Fotomodus',
     looksAria: 'Die Anmutung des Abzugs',
-    look: { none: 'Keiner', sepia: 'Sepia-Stich', aquarelle: 'Aquarell', nuit: 'Nacht' },
+    look: { none: 'Keiner', sepia: 'Sepia-Stich', aquarelle: 'Aquarell', nuit: 'Nacht', blizzard: 'Schneesturm' },
     labels: 'Namen und Zahlen',
     labelsHide: 'Die Namen der Städte und die Zahlen der Plättchen ausblenden',
     labelsShow: 'Die Namen der Städte und die Zahlen der Plättchen zeigen',

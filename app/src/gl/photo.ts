@@ -276,7 +276,45 @@ void main() {
 }
 `;
 
-const FRAGMENTS: Record<Exclude<PhotoLook, 'none'>, string> = { sepia: SEPIA, aquarelle: AQUARELLE, nuit: NUIT };
+/* a plate taken in a blizzard: the colours gone to steel and ice, blown
+   snow streaking across the frame from the upper left, a veil thick at
+   the edges, the places that are read kept clear in the lee of the
+   wind; the grain of a cold wet plate over it all */
+const BLIZZARD = /* glsl */ `${PRELUDE}${PLACES}
+void main() {
+  vec2 pos = vTextureCoord * uInputSize.xy;
+  vec2 p = pos / uUnit;
+  vec2 uv = p / uFrame;
+  vec3 c = tex(pos);
+  float l = luma(c);
+  /* steel and ice: the colour drained to a cold blue, the shade kept */
+  vec3 cold = vec3(0.56, 0.66, 0.80) * pow(l, 0.95) + vec3(0.04, 0.06, 0.10);
+  vec3 col = mix(cold, c * vec3(0.8, 0.88, 1.0), 0.5);
+  /* the blown snow: long streaks along the wind, two layers, the fine
+     one dense and the coarse one sparse, drifting with the seed */
+  vec2 w = normalize(vec2(1.0, 0.38));
+  vec2 n = vec2(-w.y, w.x);
+  float along = dot(p, w);
+  float across = dot(p, n);
+  float s1 = smoothstep(0.78, 0.98, vnoise(vec2(along * 0.02 + uSeed * 9.0, across * 0.6)));
+  float s2 = smoothstep(0.86, 0.99, vnoise(vec2(along * 0.006 + uSeed * 4.0, across * 0.25 + 3.0)));
+  float snow = clamp(s1 * 0.55 + s2 * 0.8, 0.0, 1.0);
+  /* the veil: thin in the middle, thick at the edges, and lifted off the
+     places that are read */
+  float edge = 1.0 - plate(uv, 0.5);
+  float lee = 1.0 - smoothstep(1.0, 1.6, away(p));
+  float veil = (0.07 + 0.42 * edge) * (1.0 - 0.9 * lee);
+  vec3 white = vec3(0.90, 0.94, 0.99);
+  col = mix(col, white, veil);
+  col = mix(col, white, snow * (0.22 + 0.4 * edge) * (1.0 - 0.85 * lee));
+  /* the grain of a cold wet plate, and its dark rim */
+  col += (hash(floor(p * 0.5) + uSeed) - 0.5) * 0.035;
+  col *= mix(0.72, 1.0, plate(uv, 0.18));
+  finalColor = vec4(clamp(col, 0.0, 1.0), 1.0);
+}
+`;
+
+const FRAGMENTS: Record<Exclude<PhotoLook, 'none'>, string> = { sepia: SEPIA, aquarelle: AQUARELLE, nuit: NUIT, blizzard: BLIZZARD };
 
 interface LookUniforms {
   uFrame: Float32Array;
