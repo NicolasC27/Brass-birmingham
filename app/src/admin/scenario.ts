@@ -3,7 +3,7 @@ import type { GameAction } from '@/game/actions';
 import { chooseBotMove } from '@/game/bot';
 import { BOT_SKILL, personaName } from '@/game/data';
 import { newGame } from '@/game/engine';
-import { lastRound } from '@/components/game/handFan';
+import { lastRound } from '@/game/rounds';
 import type { BotPersona, GameState, SetupPayload } from '@/game/types';
 
 /* ------------------------------------------------------------------ */

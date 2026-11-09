@@ -26,6 +26,15 @@ export const TUNES: Record<Era, readonly Tune[]> = {
   canal: [{ name: 'music-canal-iv' }, { name: 'music-canal-vii' }, { name: 'music-canal-vi' }, { name: 'music-canal-ii' }],
   rail: [{ name: 'music-rail-iv' }, { name: 'music-rail-ii' }, { name: 'music-rail-v' }],
 };
+/** the frozen city's pieces, one an era, in place of the eras' own: a
+ *  piano alone in the cold and the low strings under it, then the same
+ *  cold with the engines */
+export const TUNES_FROST: Record<Era, readonly Tune[]> = {
+  canal: [{ name: 'music-frost-i' }],
+  rail: [{ name: 'music-frost-ii' }],
+};
+/** the playlist of an era, on a frozen ground or not */
+export const tunesOf = (era: Era, frost: boolean): readonly Tune[] => (frost ? TUNES_FROST : TUNES)[era];
 
 /** the first tune comes a few seconds after the era opens */
 export const TUNE_FIRST: readonly [number, number] = [4, 10];
@@ -58,7 +67,7 @@ export function nextOf<T>(names: readonly T[], last: T | null, chance: Chance): 
 }
 
 /** the tune of this name in an era's playlist */
-export const tuneOf = (era: Era, name: string): Tune | undefined => TUNES[era].find((t) => t.name === name);
+export const tuneOf = (era: Era, name: string): Tune | undefined => TUNES[era].find((t) => t.name === name) ?? TUNES_FROST[era].find((t) => t.name === name);
 
 /** between two of the townsfolk's voices: sparse, a minute to three */
 export const VOICE_GAP: readonly [number, number] = [60, 180];

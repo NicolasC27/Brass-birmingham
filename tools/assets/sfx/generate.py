@@ -78,6 +78,8 @@ PLAN = {
     'stamp': (1.0, 2, 0.6, False, 'a heavy wooden printer\'s block pressed firmly onto a sheet of paper on an oak table, one dull thump with a soft paper crush, close, dry room, ' + ERA),
     'link-canal': (1.5, 1, 0.55, False, ['a small wooden canal boat nudging a stone lock wall, gentle water lapping and slosh, close, calm, ' + ERA,
                   'a wooden narrowboat bumping gently against a stone lock wall, one soft knock of wood on stone and a small splash of water, clean close recording, low noise floor, ' + ERA]),
+    # a sledge setting off on the ice (the frozen city's canal-era link)
+    'link-sledge': (1.5, 1, 0.55, False, 'a horse-drawn sledge setting off on packed snow: a short jingle of small harness bells, the iron runners creaking once as they break free, close, calm, outdoors, no voices, ' + ERA),
     'link-rail': (1.2, 1, 0.55, False, 'a short iron rail dropped into place on wooden sleepers, one metallic clank with a dull thud, outdoors, ' + ERA),
     'sell': (1.5, 1, 0.6, False, 'a few heavy copper and silver coins poured into a wooden counting tray, short clinking, close, ' + ERA),
     # the seventh round: the owner found the whistles poor. Take 1 is one
@@ -438,7 +440,40 @@ MUSIC['music-rail-v'] = (170.0, 1, [
 ])
 
 # name: (takes, sections) — asked of the music model as a plan, only when named
+# the ninth round: two pieces for the frozen city (the counter's
+# ground-frost), one an era, in Frostpunk's own manner — low strings and a
+# lone piano, slow, in a minor key, long silences, a crescendo kept for
+# the end — written through like the others
+FROST_NO = ['drums', 'percussion', 'vocals', 'singing', 'choir', 'humming', 'synthesizer', 'synth pads', 'electric instruments',
+            'modern production', 'folk dance', 'jig', 'cheerful', 'bright', 'loop', 'repetitive ostinato']
+FROST_ROOM = ['instrumental', 'a small string orchestra and a grand piano in a cold hall of the 1840s', 'period acoustic instruments',
+              'slow, grave, spacious, with long silences', 'the dramatic score of a city surviving the ice', 'no words', 'no voices']
+
+
+def fsection(label: str, seconds: float, styles: list, adherence: str = 'high') -> dict:
+    return {'text': f'[{label}]\n[Instrumental]', 'duration_ms': int(seconds * 1000), 'positive_styles': [*styles, *FROST_ROOM],
+            'negative_styles': FROST_NO, 'context_adherence': adherence}
+
+
 PLANS = {
+    # the canal era on the ice: a piano alone in the cold, the low strings
+    # under it, a cello's lament, the whole hall at the end and silence
+    'music-frost-i': (2, [
+        fsection('Intro', 15, ['a grand piano alone, slow single notes in D minor with long silences between them', 'very slow, around 50 bpm', 'cold, still, a city asleep under the snow']),
+        fsection('Theme', 45, ['the piano plays a simple grave melody in D minor', 'double basses and cellos hold long low notes under it', 'around 52 bpm', 'sparse, each phrase followed by silence']),
+        fsection('Lament', 40, ['a solo cello takes the melody, mournful, in G minor', 'the violas answer in a low murmur, the piano silent', 'around 50 bpm', 'thinner, colder'], 'medium'),
+        fsection('Rising', 40, ['back to D minor', 'the full strings take the theme, growing slowly from very soft to strong', 'the piano strikes low octaves on the beat', 'a slow, inexorable crescendo, around 54 bpm']),
+        fsection('Coda', 20, ['the strings fall away', 'the piano alone again, three slow notes, and a long silence', 'a quiet final low chord in D minor']),
+    ]),
+    # the rail era on the ice: the same cold, with the engines — low brass
+    # and a distant horn, a pulse in the basses, the piano hammering
+    'music-frost-ii': (2, [
+        fsection('Intro', 12, ['double basses and cellos alone, a slow heavy pulse on one low note in C minor', 'around 56 bpm', 'dark, cold, a works' + "'" + ' night shift under the snow']),
+        fsection('Theme', 45, ['a grand piano plays a grave, hammered melody in C minor over the string pulse', 'a distant French horn holds a long note now and then', 'around 56 bpm', 'relentless but slow']),
+        fsection('Hollow', 40, ['the pulse stops', 'a solo violin, high, thin and cold, over held low strings in A-flat major', 'the piano silent', 'around 52 bpm', 'empty, suspended, with long silences'], 'medium'),
+        fsection('Rising', 45, ['back to C minor', 'the pulse returns in the basses, the full strings and low brass take the theme', 'the piano striking low octaves', 'a slow crescendo to a strong, grim climax, around 58 bpm']),
+        fsection('Coda', 18, ['everything falls away', 'the horn alone, far off, one long note', 'the basses' + "'" + ' pulse slowing to a stop, then silence']),
+    ]),
     # a towpath air in D major, 6/8, unhurried: the fiddle's tune, the
     # concertina's minor middle, the flute taking the tune back
     'music-canal-iv': (1, [

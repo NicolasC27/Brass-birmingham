@@ -1025,3 +1025,26 @@ from 0:20) is now the frozen city's bed, breathing 2 dB, with
 filtered off above 1.8 kHz) is the storm's own loop at -21 LUFS, faded
 over the wind as the storm rises (`windStorm` in sfx.ts) and gone with
 it. The model's take (`amb-frost-1`) stays in raw/, not served.
+
+## The ninth round: the frozen city's music, and a sledge's bells (2026-11-09)
+
+The eras' airs — jigs and towpath airs — made no sense on the ice. Two
+pieces for the frozen city, one an era, asked as composition plans in
+Frostpunk's own manner (`FROST_ROOM`/`FROST_NO` in generate.py: a small
+string orchestra and a grand piano in a cold hall, slow, grave, long
+silences, no dance, no folk): `music-frost-i`, a piano alone in D minor,
+the low strings under it, a cello's lament in G minor, the whole hall
+rising, the piano alone again; `music-frost-ii`, the same cold with the
+engines — a pulse in the basses in C minor, the piano hammering, a
+distant horn, a hollow in A-flat, a grim climax. Two takes each, 2:40,
+about 8 800 credits in all (the counter from 62 290 to 68 907, the
+sledge's bells among them). Measured: i-1 dies for two seconds at 1:40
+and i-2 runs through (-17.7 LUFS); ii-1 opens on three seconds of
+silence and ii-2 falls silent for five at 2:24. Served: i-2 whole, ii-1
+from 2.5 s, both at -20 LUFS, played on the frozen ground in place of
+the eras' own (`TUNES_FROST`, `tunesOf` in playlist.ts). The judge's
+verdict on the four takes is in `judge/frost-*.json`.
+
+`link-sledge` (one take, 1.5 s, the harness bells of a sledge setting
+off, the runners creaking free) is the canal era's link on the ice, in
+place of the water at the lock wall (`linkCue` in sfx.ts).

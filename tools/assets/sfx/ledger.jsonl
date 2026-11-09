@@ -260,3 +260,8 @@
 {"take": "life-sledge-1", "seconds": 8.0, "before": 62015, "after": 62015, "spent": 0}
 {"take": "life-horn-1", "seconds": 5.0, "before": 62015, "after": 62224, "spent": 209}
 {"take": "life-pick-1", "seconds": 6.0, "before": 62224, "after": 62224, "spent": 0}
+{"take": "music-frost-i-1", "seconds": 160.0, "before": 62290, "after": 62290, "spent": 0}
+{"take": "music-frost-i-2", "seconds": 160.0, "before": 62290, "after": 66690, "spent": 4400}
+{"take": "music-frost-ii-1", "seconds": 160.0, "before": 66690, "after": 66690, "spent": 0}
+{"take": "link-sledge-1", "seconds": 1.5, "before": 66690, "after": 68907, "spent": 2217}
+{"take": "music-frost-ii-2", "seconds": 160.0, "before": 66690, "after": 68907, "spent": 2217}

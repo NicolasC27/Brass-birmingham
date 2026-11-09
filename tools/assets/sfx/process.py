@@ -66,6 +66,7 @@ SHORT = {
     'stamp': ('stamp-1', None, '', PEAK),
     'link-canal': ('link-canal-1', None, '', PEAK),
     'link-rail': ('link-rail-1', None, '', PEAK, {'dehum': True}),
+    'link-sledge': ('link-sledge-1', None, '', PEAK, {'dehum': True}),
     # levelled at its peak, the coins came to -18.7 LUFS, 8 LU over the
     # other moves of the hand: brought to the stamp's loudness less 3 LU
     'sell': ('sell-1', None, '', PEAK, {'lufs': -23}),
@@ -290,6 +291,12 @@ PIECES = {
     # 87.2 Hz, -30 to -34 dBFS and 12 to 20 dB over the bass around it,
     # unmoved while the bass's own notes come and go: the model's drone, as
     # in vi, taken down by the same two notches
+    # the frozen city's two pieces (the ninth round): take 2 of the first
+    # runs through without a hole (take 1 dies for two seconds at 1:40);
+    # take 1 of the second opens on three seconds of silence, cut, where
+    # take 2 falls silent for five seconds at 2:24
+    'music-frost-i': ('music-frost-i-2', 0.0, 157.1, 3.0, 'highpass=f=40,highpass=f=40', -20.0),
+    'music-frost-ii': ('music-frost-ii-1', 2.5, 155.5, 3.0, 'highpass=f=40,highpass=f=40', -20.0),
     'music-rail-iv': ('music-rail-iv-1', 0.0, 168.5, 3.0, 'highpass=f=45,highpass=f=45,bandreject=f=87:t=h:w=6,bandreject=f=87:t=h:w=6', -20.0),
     # v: take 4, strings, fortepiano, clarinet and horn, G minor, from
     # 18.4 s (the pulse alone before it, 12 dB under the body); it grows 12 dB
