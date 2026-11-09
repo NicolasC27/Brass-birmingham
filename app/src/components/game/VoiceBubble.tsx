@@ -1,3 +1,5 @@
+import { cn } from '@/lib/utils';
+import { groundWeather } from './boardOptions';
 import { useLayoutEffect, useRef, useSyncExternalStore } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { TOWN_BY_ID } from '@/game/data';
@@ -55,8 +57,10 @@ export function BubbleFace({ said }: { said: Pick<Said, 'name' | 'trade' | 'text
   const t = useT();
   const key = said.id ? `game.voices.${said.id}` : null;
   const sense = lang !== 'en' && key && t(key) !== key ? t(key) : null;
+  /* on the frozen ground the paper is iced and rimmed in blue */
+  const frost = groundWeather() === 'frost';
   return (
-    <div className="relative max-w-[210px] rounded-[10px] border border-brass-700/50 bg-cream-100 px-2.5 pb-1.5 pt-1 text-center text-ink-900 shadow-e4">
+    <div className={cn('relative max-w-[210px] rounded-[10px] border px-2.5 pb-1.5 pt-1 text-center text-ink-900 shadow-e4', frost ? 'border-[#9fb6d2] bg-[#eef3fa] shadow-[0_0_0_1px_rgba(255,255,255,.7),0_6px_16px_rgba(10,20,40,.45)]' : 'border-brass-700/50 bg-cream-100')}>
       <span className="block font-fell text-[10px] leading-tight tracking-wide text-ink-900/60">
         {said.name}, {said.trade}
       </span>
@@ -67,7 +71,7 @@ export function BubbleFace({ said }: { said: Pick<Said, 'name' | 'trade' | 'text
       {/* the tail, pointing at the town: under the bubble, or over it when it hangs below */}
       <span
         aria-hidden
-        className="absolute left-1/2 top-full h-2.5 w-2.5 -translate-x-1/2 -translate-y-[5px] rotate-45 border-b border-r border-brass-700/50 bg-cream-100 group-data-[below=1]:bottom-full group-data-[below=1]:top-auto group-data-[below=1]:translate-y-[5px] group-data-[below=1]:border-b-0 group-data-[below=1]:border-l group-data-[below=1]:border-r-0 group-data-[below=1]:border-t"
+        className={cn('absolute left-1/2 top-full h-2.5 w-2.5 -translate-x-1/2 -translate-y-[5px] rotate-45 border-b border-r group-data-[below=1]:bottom-full group-data-[below=1]:top-auto group-data-[below=1]:translate-y-[5px] group-data-[below=1]:border-b-0 group-data-[below=1]:border-l group-data-[below=1]:border-r-0 group-data-[below=1]:border-t', frost ? 'border-[#9fb6d2] bg-[#eef3fa]' : 'border-brass-700/50 bg-cream-100')}
       />
     </div>
   );
