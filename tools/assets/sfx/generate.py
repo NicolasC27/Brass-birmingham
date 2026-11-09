@@ -474,6 +474,23 @@ PLANS = {
         fsection('Rising', 45, ['back to C minor', 'the pulse returns in the basses, the full strings and low brass take the theme', 'the piano striking low octaves', 'a slow crescendo to a strong, grim climax, around 58 bpm']),
         fsection('Coda', 18, ['everything falls away', 'the horn alone, far off, one long note', 'the basses' + "'" + ' pulse slowing to a stop, then silence']),
     ]),
+    # the frozen city's third and fourth pieces: a lament for the canal
+    # era, a chorale for the rail, so the two first are not heard twice
+    # running through a long evening
+    'music-frost-iii': (1, [
+        fsection('Intro', 12, ['a pedal harp alone, slow bare chords in A minor', 'very slow, around 48 bpm', 'the hush of snow falling at night']),
+        fsection('Lament', 48, ['a solo cello sings a long mournful melody in A minor over the harp', 'the double basses enter under it, very soft', 'around 48 bpm', 'each phrase left to die in silence']),
+        fsection('Memory', 40, ['the key warms to F major', 'a solo violin takes a tender melody, a memory of summer', 'the harp in gentle arpeggios, the cello silent', 'around 52 bpm', 'thinner, lighter, far away'], 'medium'),
+        fsection('Return', 40, ['back to A minor', 'the cello and the violin together, the melody grown, the full strings swelling slowly under them', 'the harp struck hard on the beat', 'a slow crescendo to a sorrowful height, around 50 bpm']),
+        fsection('Coda', 20, ['the strings fall away', 'the harp alone, three bare chords, and silence', 'a quiet final chord in A minor']),
+    ]),
+    'music-frost-iv': (1, [
+        fsection('Intro', 12, ['low brass alone, French horns and a tuba, a slow solemn chorale in E-flat minor', 'around 54 bpm', 'the works at night under the snow, the furnaces lit']),
+        fsection('Chorale', 45, ['the strings join the brass chorale, slow and grave, in E-flat minor', 'a grand piano doubles the bass in low octaves', 'around 54 bpm', 'broad, heavy, unhurried']),
+        fsection('Ember', 40, ['G-flat major', 'a solo horn over held low strings, warm and distant, the piano answering with sparse high notes', 'around 50 bpm', 'suspended, with long silences'], 'medium'),
+        fsection('Rising', 45, ['back to E-flat minor', 'the chorale returns in the full orchestra, the basses pulsing slowly, the brass growing from soft to strong', 'the piano hammering low octaves', 'a slow inexorable crescendo to a grim, bright climax, around 56 bpm']),
+        fsection('Coda', 18, ['everything falls away but the horns', 'one last soft chord of the brass, held, then silence']),
+    ]),
     # a towpath air in D major, 6/8, unhurried: the fiddle's tune, the
     # concertina's minor middle, the flute taking the tune back
     'music-canal-iv': (1, [

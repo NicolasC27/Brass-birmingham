@@ -307,6 +307,10 @@ PIECES = {
     # take 2 falls silent for five seconds at 2:24
     'music-frost-i': ('music-frost-i-2', 0.0, 157.1, 3.0, 'highpass=f=40,highpass=f=40', -20.0),
     'music-frost-ii': ('music-frost-ii-1', 2.5, 155.5, 3.0, 'highpass=f=40,highpass=f=40', -20.0),
+    # the third and fourth, one take each, both opening on four seconds of
+    # silence, cut, and running through without a hole
+    'music-frost-iii': ('music-frost-iii-1', 3.5, 154.5, 3.0, 'highpass=f=40,highpass=f=40', -20.0),
+    'music-frost-iv': ('music-frost-iv-1', 3.5, 157.9, 3.0, 'highpass=f=40,highpass=f=40', -20.0),
     'music-rail-iv': ('music-rail-iv-1', 0.0, 168.5, 3.0, 'highpass=f=45,highpass=f=45,bandreject=f=87:t=h:w=6,bandreject=f=87:t=h:w=6', -20.0),
     # v: take 4, strings, fortepiano, clarinet and horn, G minor, from
     # 18.4 s (the pulse alone before it, 12 dB under the body); it grows 12 dB

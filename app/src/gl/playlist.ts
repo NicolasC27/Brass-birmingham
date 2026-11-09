@@ -30,8 +30,8 @@ export const TUNES: Record<Era, readonly Tune[]> = {
  *  piano alone in the cold and the low strings under it, then the same
  *  cold with the engines */
 export const TUNES_FROST: Record<Era, readonly Tune[]> = {
-  canal: [{ name: 'music-frost-i' }],
-  rail: [{ name: 'music-frost-ii' }],
+  canal: [{ name: 'music-frost-i' }, { name: 'music-frost-iii' }],
+  rail: [{ name: 'music-frost-ii' }, { name: 'music-frost-iv' }],
 };
 /** the playlist of an era, on a frozen ground or not */
 export const tunesOf = (era: Era, frost: boolean): readonly Tune[] => (frost ? TUNES_FROST : TUNES)[era];

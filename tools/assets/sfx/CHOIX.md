@@ -1060,3 +1060,15 @@ hours" for "twelve", and an extra groan before "me knees" — kept
 anyway. Every line now serves its v4 take (`FIRST_ROUND` in process.py:
 take 2 of each, Barnaby's rope its third, Mrs Blewitt's "finest" its
 fourth); the v3 takes stay in raw/.
+
+## The frozen city's third and fourth pieces (2026-11-09)
+
+Nicolas liked the first two and asked for more. One take each, ~4 700
+credits (the counter to 73 580): `music-frost-iii`, a lament for the
+canal era — harp alone, a cello in A minor, a memory of summer on the
+violin in F, the strings swelling on the return; `music-frost-iv`, a
+chorale for the rail — horns and tuba in E-flat minor, the strings and
+the piano's low octaves, a solo horn over held strings, the full
+orchestra rising. Both open on four seconds of silence, cut at 3.5 s,
+and run through without a hole (-15.2 and -17.9 LUFS, served at -20).
+They alternate with the first two on the frozen ground (`TUNES_FROST`).
