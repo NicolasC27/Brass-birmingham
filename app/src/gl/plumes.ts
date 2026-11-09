@@ -281,14 +281,23 @@ export function buildPlumes(reduced: boolean, ground: Container, weather: Weathe
       emitters.push({ ...e, first: usedSmoke, n, glow: g });
       usedSmoke += n;
     });
+    /* on the frozen ground every settlement is lived in: its windows come
+       on at dusk, works or none */
+    if (weather === 'frost') {
+      for (const def of TOWNS) {
+        if (def.farm || perTown.has(def.id)) continue;
+        const c = townChrome(def);
+        perTown.set(def.id, { xs: c.ax, ys: c.ay, n: 0 });
+      }
+    }
     towns = [];
     for (const [id, tw] of perTown) {
       const def = TOWNS.find((t) => t.id === id);
       if (!def || usedGlow >= GLOW_POOL) continue;
       const c = townChrome(def);
       const seed = hash(id);
-      const n = Math.min(WINDOWS, 1 + tw.n, FLARE_FIRST - usedLamp);
-      const town: Town = { x: tw.xs / tw.n, y: tw.ys / tw.n, pool: usedGlow++, poolSize: Math.max(c.blockW, c.blockH) * 2.4, tiles: tw.n, first: usedLamp, n: Math.max(0, n), seed };
+      const n = Math.min(WINDOWS, (weather === 'frost' ? 3 : 1) + tw.n, FLARE_FIRST - usedLamp);
+      const town: Town = { x: tw.n ? tw.xs / tw.n : tw.xs, y: tw.n ? tw.ys / tw.n : tw.ys, pool: usedGlow++, poolSize: Math.max(c.blockW, c.blockH) * 2.4, tiles: tw.n, first: usedLamp, n: Math.max(0, n), seed };
       const pool = glows.ps[town.pool];
       pool.tint = 0xffb45a;
       pool.x = town.x;
