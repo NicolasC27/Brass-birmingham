@@ -1,4 +1,4 @@
-import { getBoardOptions, groundWeather } from './boardOptions';
+import { getBoardOptions, groundWeather, tryOnNow } from './boardOptions';
 import type { Card } from '@/game/types';
 import { industryFaceUrl } from '@/gl/faces';
 
@@ -84,7 +84,7 @@ export const ENGRAVED_TOWNS: ReadonlySet<string> = new Set([
 export function cardArt(card: Card): string | null {
   /* the same plates under snow: the winter set from the counter, or the
      frozen ground's own */
-  const winter = getBoardOptions().cardSet === 'frost' || groundWeather() === 'frost';
+  const winter = getBoardOptions().cardSet === 'frost' || groundWeather() === 'frost' || tryOnNow()?.cards === 'frost';
   if (card.kind === 'location') return card.town && ENGRAVED_TOWNS.has(card.town) ? `/cards/town-${card.town}${winter ? '-frost' : ''}.webp` : null;
   if (card.kind === 'wild-location') return '/cards/wild-location.webp';
   if (card.kind === 'wild-industry') return '/cards/wild-industry.webp';

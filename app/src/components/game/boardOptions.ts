@@ -69,14 +69,52 @@ const TRIAL_GROUNDS: Record<string, MapSet> = {
   city: FROST_URL,
 };
 /* the trial asked for is kept for the tab: a game opened at /game is sent
-   on to its own address, and the query would be lost on the way */
+   on to its own address, and the query would be lost on the way. A thing
+   tried on from the counter (tryOn) is worn the same way, for a while */
 const TRIAL_KEY = 'brassworks.ground.trial';
+/** what the counter lets a reader try on the table before buying it */
+export interface TryOn {
+  ground?: 'city';
+  tiles?: 'frost';
+  cards?: 'frost';
+  /** Date.now() past which the trial is over */
+  until: number;
+}
+const TRY_KEY = 'brassworks.tryon';
+/** how long a thing tried on from the counter stays on the table */
+export const TRY_ON_MS = 10 * 60_000;
+const session = (): Storage | null => {
+  try {
+    return typeof sessionStorage === 'undefined' ? null : sessionStorage;
+  } catch {
+    return null;
+  }
+};
+export const tryOnNow = (): TryOn | null => {
+  const raw = session()?.getItem(TRY_KEY);
+  if (!raw) return null;
+  try {
+    const t = JSON.parse(raw) as TryOn;
+    if (typeof t.until !== 'number' || t.until < Date.now()) {
+      session()?.removeItem(TRY_KEY);
+      return null;
+    }
+    return t;
+  } catch {
+    return null;
+  }
+};
+/** try a thing on from the counter: the tab wears it for TRY_ON_MS */
+export function tryOn(what: Omit<TryOn, 'until'>): void {
+  const was = tryOnNow() ?? { until: 0 };
+  session()?.setItem(TRY_KEY, JSON.stringify({ ...was, ...what, until: Date.now() + TRY_ON_MS }));
+}
 const trialGround = (): MapSet | undefined => {
   if (typeof location === 'undefined') return undefined;
   const asked = new URLSearchParams(location.search).get('ground');
   try {
     if (asked !== null) sessionStorage.setItem(TRIAL_KEY, asked);
-    return TRIAL_GROUNDS[asked ?? sessionStorage.getItem(TRIAL_KEY) ?? ''];
+    return TRIAL_GROUNDS[asked ?? sessionStorage.getItem(TRIAL_KEY) ?? tryOnNow()?.ground ?? ''];
   } catch {
     return TRIAL_GROUNDS[asked ?? ''];
   }

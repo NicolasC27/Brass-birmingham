@@ -483,3 +483,14 @@ are the `cards-frost` item (90 guineas), worn through the `cardSet`
 option; the frozen ground still deals them on its own. The pottery
 subject was refused three times with the trade named and came on the
 first ask without it.
+
+### The counter opened
+
+The counter had stood in standby since it was built (`COUNTER_OPEN`);
+it is open now, the office selling and debiting as before. A thing the
+board wears — the frozen city, the winter tiles, the winter engravings —
+can be seen on the table before it is bought: "Voir sur la table"
+(`tryOn` in `boardOptions.ts`) has the tab wear it for ten minutes
+(`brassworks.tryon` in sessionStorage) and opens a table; the ground,
+the tile variant and the card plates read the trial as they read the
+frozen ground.

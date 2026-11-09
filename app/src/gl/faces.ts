@@ -1,5 +1,5 @@
 import type { IndustryType } from '@/game/types';
-import { groundWeather } from '@/components/game/boardOptions';
+import { groundWeather, tryOnNow } from '@/components/game/boardOptions';
 
 /* ------------------------------------------------------------------ */
 /* The faces of the tiles: which painting set each industry wears and  */
@@ -96,7 +96,7 @@ export const variantOf = (i: IndustryType, art: TileArt): TileVariant | undefine
   const list = TILE_VARIANTS[i];
   const chosen = list?.find((v) => v.id === art[i]);
   if (chosen) return chosen;
-  if (groundWeather() === 'frost') return list?.find((v) => v.id === 'frost') ?? list?.[0];
+  if (groundWeather() === 'frost' || tryOnNow()?.tiles === 'frost') return list?.find((v) => v.id === 'frost') ?? list?.[0];
   return list?.[0];
 };
 /** the face an industry wears under the current art choice: the finished
