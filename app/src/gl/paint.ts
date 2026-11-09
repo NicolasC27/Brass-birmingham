@@ -802,28 +802,29 @@ function makeRibbon(labelText: string, cx: number, cy: number, w: number, h: num
   const b = h / 2;
   const plaque = new Graphics();
   plaque.eventMode = 'none';
-  /* an ink plate: the name in cream small capitals on a dark lacquered
-     bar, the town's own colour kept as a fillet along its top and in the
-     swallowtails, so the colour code still reads without the bar
-     shouting it; a merchant's plate wears brass instead */
-  const hue = tint ?? 0x8a6b33;
-  const edge = shade(hue, 0.55);
-  const dark = new FillGradient({ type: 'linear', start: { x: 0, y: 0 }, end: { x: 0, y: 1 }, textureSpace: 'local' });
-  dark.addColorStop(0, '#2b2622').addColorStop(0.5, '#1d1915').addColorStop(1, '#120f0c');
-  /* the swallowtails, in the colour */
-  plaque.poly([l + 3, t + 4, l - 10, t + 7, l - 5, 0, l - 10, b - 1, l + 3, b + 3]).fill(shade(hue, 0.7)).stroke({ width: 0.7, color: edge });
-  plaque.poly([r - 3, t + 4, r + 10, t + 7, r + 5, 0, r + 10, b - 1, r - 3, b + 3]).fill(shade(hue, 0.7)).stroke({ width: 0.7, color: edge });
-  plaque.roundRect(l, t, w, h, 2).fill(dark).stroke({ width: 0.9, color: shade(hue, 0.85), alpha: 0.9 });
-  /* the fillet of colour along the top, and a thin light under it */
-  plaque.rect(l + 1, t + 1, w - 2, 2.2).fill({ color: hue, alpha: 0.95 });
-  plaque.moveTo(l + 2, t + 3.8).lineTo(r - 2, t + 3.8).stroke({ width: 0.6, color: 0xfff6dc, alpha: 0.18 });
-  /* the small capitals, with a shadow for relief */
-  const style = { fontFamily: "'IM Fell English SC','Playfair Display',serif", fontSize: RIBBON_FONT, letterSpacing: 1.2 };
-  const under = new Text({ text: labelText, style: { ...style, fill: 0x000000 } });
+  const edge = tint !== undefined ? shade(tint, 0.5) : 0x8a6b33;
+  /* small side hats: wings tucked behind the bar */
+  plaque.poly([l + 3, t + 4, l - 11, t + 7, l - 6, 0, l - 11, b - 1, l + 3, b + 3]).fill(tint !== undefined ? shade(tint, 0.78) : 0xc9b384).stroke({ width: 0.8, color: edge });
+  plaque.poly([r - 3, t + 4, r + 11, t + 7, r + 6, 0, r + 11, b - 1, r - 3, b + 3]).fill(tint !== undefined ? shade(tint, 0.78) : 0xc9b384).stroke({ width: 0.8, color: edge });
+  /* main bar: vertical gradient (parchment, or the town colour) */
+  const bar = new FillGradient({ type: 'linear', start: { x: 0, y: 0 }, end: { x: 0, y: 1 }, textureSpace: 'local' });
+  if (tint !== undefined) {
+    bar.addColorStop(0, shade(tint, 1.12)).addColorStop(0.52, tint).addColorStop(1, shade(tint, 0.8));
+  } else {
+    bar.addColorStop(0, '#F7EFDD').addColorStop(0.52, '#F4ECD8').addColorStop(1, '#DCC99E');
+  }
+  plaque.roundRect(l, t, w, h, 2.5).fill(bar).stroke({ width: 1.1, color: edge, alpha: 0.9 });
+  /* top edge highlight + fold tuck shadows */
+  plaque.moveTo(l + 3, t + 1.6).lineTo(r - 3, t + 1.6).stroke({ width: 0.9, color: 0xfffcf0, alpha: tint !== undefined ? 0.3 : 0.75 });
+  plaque.poly([l + 1, b - 7, l + 1, b + 1, l + 7, b + 1]).fill({ color: tint !== undefined ? shade(tint, 0.62) : 0xa98f5e, alpha: 0.55 });
+  plaque.poly([r - 1, b - 7, r - 1, b + 1, r - 7, b + 1]).fill({ color: tint !== undefined ? shade(tint, 0.62) : 0xa98f5e, alpha: 0.55 });
+  /* engraved small caps; underlay gives the carved relief */
+  const style = { fontFamily: "'IM Fell English SC','Playfair Display',serif", fontSize: RIBBON_FONT, letterSpacing: 1 };
+  const under = new Text({ text: labelText, style: { ...style, fill: tint !== undefined ? shade(tint, 0.35) : 0xfffdf4 } });
   under.anchor.set(0.5);
-  under.position.set(0, 1.6);
-  under.alpha = 0.7;
-  const label = new Text({ text: labelText, style: { ...style, fill: 0xf1e6c8 } });
+  under.position.set(0, 1.1);
+  under.alpha = tint !== undefined ? 0.8 : 0.6;
+  const label = new Text({ text: labelText, style: { ...style, fill: tint !== undefined ? 0xf7efdd : 0x2a241c } });
   label.anchor.set(0.5);
   under.eventMode = 'none';
   label.eventMode = 'none';
