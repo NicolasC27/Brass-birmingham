@@ -1,3 +1,4 @@
+import { groundWeather } from './boardOptions';
 import type { Card, GameState } from '@/game/types';
 import { actionsFor, projectedOrder } from '@/game/engine';
 import { industryFaceUrl } from '@/gl/faces';
@@ -104,7 +105,8 @@ export const ENGRAVED_TOWNS: ReadonlySet<string> = new Set([
 
 /** the picture a card carries, or null when the card draws its own */
 export function cardArt(card: Card): string | null {
-  if (card.kind === 'location') return card.town && ENGRAVED_TOWNS.has(card.town) ? `/cards/town-${card.town}.webp` : null;
+  /* the same plates under snow on the frozen ground */
+  if (card.kind === 'location') return card.town && ENGRAVED_TOWNS.has(card.town) ? `/cards/town-${card.town}${groundWeather() === 'frost' ? '-frost' : ''}.webp` : null;
   if (card.kind === 'wild-location') return '/cards/wild-location.webp';
   if (card.kind === 'wild-industry') return '/cards/wild-industry.webp';
   /* the table's painted set, whatever the board wears */
