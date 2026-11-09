@@ -434,3 +434,21 @@ country being its own. The English model stays everyone's
 (`ground-midlands`, free). The counter being in standby, the ground
 stands in its window with the portraits and the tiles. The trials
 (`?ground=frost`, `?ground=city`) remain for looking.
+
+### The cold, a second round
+
+Asked what more the map could take, and told "tout": the eras' events
+give way to the cold's own on the frozen ground (`LIFE.frost`: the ice,
+a sledge, a horn, men breaking ice); a storm every five and a half
+minutes (`storm()` in `snow.ts`: twenty seconds rising, a minute blowing,
+twenty falling — the sheet full, the wind heard rising to twice its
+level, a veil over the table never past a third); every settlement's
+windows come on at dusk, works or none (`plumes.ts`); a sledge wears two
+ruts into the snow along its line, deeper with every crossing
+(`ambiance.ts`); the market trades for the winter, the frost creeping in
+at its panel's edges (`MarketTray.tsx`, dressing only); and the hand's
+location cards are engraved again under snow
+(`tools/assets/cards/frost-cards.sh`, `town-*-frost.webp`, dealt on the
+frozen ground by `cardArt`). The first ask for the cards, "in the dead of
+a hard winter", came back as the same plates with hardly a flake: the
+snow has to be asked for plainly, as most of the picture.

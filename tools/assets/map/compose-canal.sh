@@ -34,6 +34,9 @@ if [[ ${INK:-} == ice ]]; then
   W_DEEP='rgba(126,168,186,0.80)' W_SHEEN='rgba(176,210,222,0.55)' W_THREAD='rgba(240,250,255,0.55)'
   TOWPATH='rgba(200,206,212,0.50)' LANE_UNDER='rgba(10,12,18,0.36)' LANE_OVER='rgba(190,198,208,0.50)'
   PATCH='rgba(52,48,46,0.50)' RIM='rgba(196,214,224,0.70)' BASIN='rgba(70,104,122,0.80)'
+  # the ice cut deeper into the snow: a dark lip either side, so a channel
+  # still reads where it crosses the pale wall of a settlement
+  BANK_OUT='rgba(8,14,24,0.40)' BANK_IN='rgba(6,10,18,0.66)'
 elif [[ ${LIT:-0} == 1 ]]; then
   W_DEEP='rgba(96,150,146,0.85)' W_SHEEN='rgba(150,200,196,0.55)' W_THREAD='rgba(238,248,242,0.55)'
   TOWPATH='rgba(226,208,162,0.55)' LANE_UNDER='rgba(18,14,10,0.34)' LANE_OVER='rgba(222,206,166,0.52)'
@@ -43,6 +46,8 @@ else
   TOWPATH='rgba(214,196,150,0.42)' LANE_UNDER='rgba(70,56,38,0.28)' LANE_OVER='rgba(206,186,140,0.34)'
   PATCH='rgba(90,72,50,0.6)' RIM='rgba(210,196,160,0.5)' BASIN='rgba(34,62,60,0.8)'
 fi
+# the channel's banks: earth either side of the water, unless an ink set its own
+BANK_OUT=${BANK_OUT:-'rgba(60,50,30,0.22)'} BANK_IN=${BANK_IN:-'rgba(22,30,20,0.55)'}
 FW=$((WW + 2 * BX)) FH=$((WH + 2 * BY))
 # 0. a painting smaller than the world is brought up to cover it (a Midjourney
 #    2× upscale is 2912×1632, a tenth short), so nothing mirrored or blurred
@@ -130,8 +135,8 @@ fi
 # 4. canal beds: a dug channel with earthen banks, a towpath on one side,
 #    still water with a lighter thread down the middle and faint ripples
 magick -size ${FW}x${FH} xc:none -fill none \
-  -stroke 'rgba(60,50,30,0.22)' -strokewidth 30 -draw "$(cat "$T/canal.txt")" \
-  -stroke 'rgba(22,30,20,0.55)' -strokewidth 20 -draw "$(cat "$T/canal.txt")" \
+  -stroke "$BANK_OUT" -strokewidth 30 -draw "$(cat "$T/canal.txt")" \
+  -stroke "$BANK_IN" -strokewidth 20 -draw "$(cat "$T/canal.txt")" \
   -stroke "$W_DEEP" -strokewidth 11 -draw "$(cat "$T/canal.txt")" \
   -stroke "$W_SHEEN" -strokewidth 5 -draw "$(cat "$T/canal.txt")" \
   -stroke "$W_THREAD" -strokewidth 1.4 -draw "stroke-dasharray 3 26 $(cat "$T/canal.txt")" \
