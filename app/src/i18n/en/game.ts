@@ -393,6 +393,7 @@ const game = {
   market: {
     sectionAria: 'Coal and Iron Exchange',
     heading: 'Coal & iron exchange',
+    winterHeading: 'Winter market — coal & iron',
     coal: 'Coal',
     iron: 'Iron',
     inMarket: '{count}/{max} in the market',

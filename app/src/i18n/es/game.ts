@@ -395,6 +395,7 @@ const game: typeof engame = {
   market: {
     sectionAria: 'Mercado de carbón y hierro',
     heading: 'Mercado de carbón & hierro',
+    winterHeading: 'Mercado de invierno — carbón y hierro',
     coal: 'Carbón',
     iron: 'Hierro',
     inMarket: '{count}/{max} en el mercado',

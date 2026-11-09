@@ -395,6 +395,7 @@ const fr: typeof engame = {
   market: {
     sectionAria: 'Bourse charbon & fer',
     heading: 'Bourse charbon & fer',
+    winterHeading: 'Bourse d’hiver — charbon & fer',
     coal: 'Charbon',
     iron: 'Fer',
     inMarket: '{count}/{max} au marché',

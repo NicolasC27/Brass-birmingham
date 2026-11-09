@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { groundWeather } from './boardOptions';
 import { motion } from 'framer-motion';
 import { MARKET_MAX, marketBuyPrice, marketSellPrice } from '@/game/data';
 import type { Resource } from '@/game/types';
@@ -228,6 +229,7 @@ export default function MarketTray({ consumePreview }: { consumePreview?: Partia
   if (!game) return null;
   const { coal, iron } = game.market;
   const temper = game.marketTemper;
+  const frost = groundWeather() === 'frost';
   const coalDraw = consumePreview?.coal ?? 0;
   const ironDraw = consumePreview?.iron ?? 0;
   const drawTotal = drawCost('coal', coal, coalDraw) + drawCost('iron', iron, ironDraw);
@@ -246,6 +248,15 @@ export default function MarketTray({ consumePreview }: { consumePreview?: Partia
       <div aria-hidden className="tex-wood pointer-events-none absolute inset-x-0 top-0 h-[36px] opacity-30 shadow-[inset_0_-8px_12px_rgba(0,0,0,.65)]" />
       <div aria-hidden className="tex-wood pointer-events-none absolute inset-x-0 bottom-0 h-[26px] opacity-25 shadow-[inset_0_8px_12px_rgba(0,0,0,.6)]" />
       <div aria-hidden className="pointer-events-none absolute inset-0 shadow-[inset_0_0_0_3px_rgba(62,42,26,.9),inset_0_0_0_4px_rgba(138,107,51,.35),inset_0_2px_10px_rgba(0,0,0,.6)]" />
+      {/* on the frozen ground the frost creeps in at the panel's edges, and
+          the market says it trades for the winter: pure dressing, the
+          prices are the rules' own */}
+      {frost && (
+        <>
+          <div aria-hidden className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top_left,rgba(214,228,242,.42),transparent_38%),radial-gradient(ellipse_at_bottom_right,rgba(214,228,242,.34),transparent_36%),linear-gradient(180deg,rgba(226,236,246,.22),transparent_18%)]" />
+          <div aria-hidden className="pointer-events-none absolute inset-x-3 top-[6px] h-px bg-[linear-gradient(90deg,transparent,rgba(236,244,252,.85),transparent)]" />
+        </>
+      )}
 
       <header className="relative mb-3">
         {/* brass cornice */}
@@ -257,7 +268,7 @@ export default function MarketTray({ consumePreview }: { consumePreview?: Partia
           className="mt-1.5 text-center font-fell text-[15px] tracking-[0.08em] text-brass-400"
           style={{ textShadow: '0 1px 0 rgba(0,0,0,.85), 0 -1px 0 rgba(242,234,214,.14)' }}
         >
-          {t('game.market.heading')}
+          {t(frost ? 'game.market.winterHeading' : 'game.market.heading')}
         </h2>
         <div
           aria-hidden
