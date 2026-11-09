@@ -1,0 +1,66 @@
+{
+ "params": {
+  "dup": 0.7,
+  "min_section_s": 12.0,
+  "phrase_s": 4.0,
+  "same": 0.8
+ },
+ "tunes": [
+  {
+   "length_s": 160.0,
+   "level": {
+    "bands_db": {
+     "air>6k": -39.9,
+     "low90-250": -3.2,
+     "mid250-2k": -4.8,
+     "pres2k-6k": -19.5,
+     "sub<90": -7.5
+    },
+    "centroid_hz": 298,
+    "crest_db": 18.7,
+    "head_db": -166.5,
+    "holes": [],
+    "hum_db": 2.6,
+    "hum_max_db": 5.9,
+    "lra": 13.8,
+    "lufs": -17.7,
+    "lufs_pyln": -17.7,
+    "peak_db": -2.1,
+    "tail_db": -90.4
+   },
+   "listener": {
+    "CE": 7.5,
+    "CE_min": 6.33,
+    "CU": 7.99,
+    "PC": 4.82,
+    "PQ": 8.03
+   },
+   "repetition": {
+    "beat_s": 0.534,
+    "dup": 0.216,
+    "loopy": 33.9,
+    "mean_best": 0.55,
+    "phrase_beats": 7,
+    "recur": 5,
+    "run_s": 13.7
+   },
+   "structure": {
+    "distinct": 9,
+    "form": "ABCDEFGHI",
+    "lengths_s": [
+     17.2,
+     16.9,
+     16.8,
+     16.9,
+     25.3,
+     20.7,
+     17.2,
+     12.6,
+     16.5
+    ],
+    "sections": 9
+   },
+   "tune": "music-frost-i-2.mp3"
+  }
+ ]
+}
