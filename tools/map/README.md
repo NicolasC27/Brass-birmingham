@@ -356,10 +356,14 @@ wash went for the lamps above.
     tools/map/frost-city.py tools/assets/map/map-frostcity-sheet-{a,b,c}-fal.jpg \
       tools/assets/map/map-frostcity-snow-fal.jpg places.json canal.png rail.png
     magick rail.png -resize '3200x1800^' -gravity center -extent 3200x1800 rail-world.png
-    ETCH=1 RELIEF=0 INK=ice DIM=70 FADE=60 MIST='rgb(24,30,44)' \
+    ETCH=1 RELIEF=0 INK=ice FURROW_SCALE=0.45 DIM=70 FADE=60 MIST='rgb(24,30,44)' \
       tools/assets/map/compose-canal.sh canal.png geo.json map-frostcity-canal
-    ETCH=1 INK=ice TONE=116,92 DIM=70 FADE=60 MIST='rgb(24,30,44)' \
+    ETCH=1 INK=ice FURROW_SCALE=0.45 TONE=116,92 DIM=70 FADE=60 MIST='rgb(24,30,44)' \
       tools/assets/map/compose-rail.sh rail-world.png geo.json map-frostcity-rail
+
+With the traces hidden (key C) the valley carved into the ground is all
+that is left of a route, and on the snow it read as a road: `FURROW_SCALE`
+narrows it (0.45 on the frozen city, 1 elsewhere).
 
 ### The crater's rim
 

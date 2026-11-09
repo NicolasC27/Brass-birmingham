@@ -72,12 +72,16 @@ PY2
   # shaded — and a thin groove along its floor; the whole layer then wobbled
   # by a coarse plasma and let come and go along the way by another, so no
   # line reads as ruled. FURROW_SEED changes the wobble.
+  # FURROW_SCALE narrows the valley (1 = as before): a frozen ground wants
+  # a thinner one, or the carved route reads as a road once the traces hide
+  FS=${FURROW_SCALE:-1}
+  fw() { python3 -c "print(round($1 * $FS, 2))"; }
   magick -size ${FW}x${FH} xc:none -fill none \
-    -stroke 'rgba(255,246,222,0.26)' -strokewidth 18 -draw "$(cat "$T/fur-vu.txt")" -blur 0x7 \
-    \( -size ${FW}x${FH} xc:none -fill none -stroke 'rgba(18,12,6,0.30)' -strokewidth 18 -draw "$(cat "$T/fur-vl.txt")" -blur 0x7 \) -compose over -composite \
-    \( -size ${FW}x${FH} xc:none -fill none -stroke 'rgba(20,14,8,0.34)' -strokewidth 7 -draw "$(cat "$T/fur-0.txt")" -blur 0x2 \) -compose over -composite \
-    \( -size ${FW}x${FH} xc:none -fill none -stroke 'rgba(0,0,0,0.5)' -strokewidth 2.4 -draw "$(cat "$T/fur-u.txt")" -blur 0x1.2 \) -compose over -composite \
-    \( -size ${FW}x${FH} xc:none -fill none -stroke 'rgba(255,245,220,0.38)' -strokewidth 2.4 -draw "$(cat "$T/fur-l.txt")" -blur 0x1.4 \) -compose over -composite \
+    -stroke 'rgba(255,246,222,0.26)' -strokewidth "$(fw 18)" -draw "$(cat "$T/fur-vu.txt")" -blur 0x$(fw 7) \
+    \( -size ${FW}x${FH} xc:none -fill none -stroke 'rgba(18,12,6,0.30)' -strokewidth "$(fw 18)" -draw "$(cat "$T/fur-vl.txt")" -blur 0x$(fw 7) \) -compose over -composite \
+    \( -size ${FW}x${FH} xc:none -fill none -stroke 'rgba(20,14,8,0.34)' -strokewidth "$(fw 7)" -draw "$(cat "$T/fur-0.txt")" -blur 0x2 \) -compose over -composite \
+    \( -size ${FW}x${FH} xc:none -fill none -stroke 'rgba(0,0,0,0.5)' -strokewidth "$(fw 2.4)" -draw "$(cat "$T/fur-u.txt")" -blur 0x1.2 \) -compose over -composite \
+    \( -size ${FW}x${FH} xc:none -fill none -stroke 'rgba(255,245,220,0.38)' -strokewidth "$(fw 2.4)" -draw "$(cat "$T/fur-l.txt")" -blur 0x1.4 \) -compose over -composite \
     "$T/fur-raw.png"
   magick -seed "${FURROW_SEED:-11}" -size $((FW/10))x$((FH/10)) plasma:fractal -resize ${FW}x${FH}! -blur 0x6 "$T/fur-disp.png"
   magick "$T/fur-raw.png" "$T/fur-disp.png" -compose Displace -set option:compose:args 7x7 -composite "$T/fur-wob.png"
