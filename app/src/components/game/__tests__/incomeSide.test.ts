@@ -253,9 +253,9 @@ describe('the rungs of the income track', () => {
     expect(crossedTo(10, 10)).toBeNull();
   });
 
-  it('prints a rung’s pay signed, a rung that pays nothing as a quiet ±0', () => {
+  it('prints a rung’s pay signed, a rung that pays nothing as a bare 0', () => {
     for (const l of LANGS) {
-      expect(payFigure(0, l)).toBe('±0');
+      expect(payFigure(0, l)).toBe('0');
       expect(payFigure(3, l)).toBe(`+${money(3, l)}`);
       expect(payFigure(-2, l)).toBe(money(-2, l));
       expect(payFigure(-2, l).startsWith('−')).toBe(true);

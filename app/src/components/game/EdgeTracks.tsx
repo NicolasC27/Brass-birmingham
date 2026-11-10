@@ -287,8 +287,9 @@ function Pawn({
             {label}
           </span>
         )}
-        {figure && thin && axis === 'x' && (
-          /* the rung's pay after its pawns along the bottom */
+        {figure && thin && axis === 'x' && !nil && (
+          /* the rung's pay after its pawns along the bottom — none where
+             the rung pays nothing: the ruler's band says 0 under the pawn */
           <span
             aria-hidden
             className={`ml-[3px] whitespace-nowrap rounded-[2px] border-b bg-coal-950/85 px-[2px] pb-px pt-[2px] font-mono text-[11px] font-bold leading-none ${
@@ -298,7 +299,7 @@ function Pawn({
             {figureText}
           </span>
         )}
-        {figure && thin && axis === 'y' && (
+        {figure && thin && axis === 'y' && !nil && (
           /* down the left edge the pay hangs under the lowest pawn, on a
              plate centred on the line (the pawn's zigzag undone), inside
              the lane: the reader's own edged in cream, the leader's in gold */

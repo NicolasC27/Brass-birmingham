@@ -45,10 +45,10 @@ export function crossedTo(from: number, to: number): number | null {
 }
 
 /** what a rung pays, as the folded track prints it by its tokens: signed,
- *  so a debt and a gain read apart ("+3 £", "−2 £"), and a quiet "±0"
- *  where the rung pays nothing rather than a bare "0 £" */
+ *  so a debt and a gain read apart ("+3 £", "−2 £"), and a bare "0" where
+ *  the rung pays nothing — no sign, no pound: there is nothing to count */
 export function payFigure(pay: number, l?: Lang): string {
-  if (pay === 0) return '±0';
+  if (pay === 0) return '0';
   return pay > 0 ? `+${money(pay, l)}` : money(pay, l);
 }
 
