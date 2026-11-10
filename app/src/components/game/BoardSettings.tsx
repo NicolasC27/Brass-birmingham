@@ -86,20 +86,27 @@ function Switch({ on, onClick, label }: { on: boolean; onClick: () => void; labe
   );
 }
 
-/** a level on a brass rule, 0 to 1, in tenths */
+/** a level on a brass rule, 0 to 1, in hundredths — the number beside it,
+ *  so a level can be set and read to the unit */
 function Level({ value, onChange, label }: { value: number; onChange: (v: number) => void; label: string }) {
+  const pct = Math.round(value * 100);
   return (
-    <input
-      type="range"
-      min={0}
-      max={10}
-      step={1}
-      value={Math.round(value * 10)}
-      aria-label={label}
-      aria-valuetext={`${Math.round(value * 100)} %`}
-      onChange={(e) => onChange(Number(e.target.value) / 10)}
-      className="h-5 w-32 cursor-pointer accent-brass-400"
-    />
+    <span className="flex items-center gap-2">
+      <input
+        type="range"
+        min={0}
+        max={100}
+        step={1}
+        value={pct}
+        aria-label={label}
+        aria-valuetext={`${pct} %`}
+        onChange={(e) => onChange(Number(e.target.value) / 100)}
+        className="h-5 w-32 cursor-pointer accent-brass-400"
+      />
+      <span className="tnums w-7 text-right font-sans text-[11px] text-cream-100/70" aria-hidden>
+        {pct}
+      </span>
+    </span>
   );
 }
 
