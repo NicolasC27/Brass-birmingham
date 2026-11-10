@@ -4,7 +4,8 @@ import { Link, useLocation } from 'react-router';
 import { ArrowLeft, Check, ChevronDown, ChevronUp, Eye, EyeOff, Flag, LogIn, MessageSquare, Radio, Send, UserPlus, Users } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { localeOf, useLang, useT } from '@/i18n';
-import { befriend, invite, portraitUrl, useDesk, useLine, useSession } from '@/online/session';
+import { befriend, invite, useDesk, useLine, useSession } from '@/online/session';
+import { likenessUrl } from '@/platform/heads';
 import { deskErrorKey } from '@/online/errors';
 import type { Friend, TableSummary } from '@/online/table';
 import { HALL, MAX_LINE, friendRoom, roomOf } from '@/online/parlour';
@@ -52,12 +53,10 @@ function withCodes(text: string): React.ReactNode {
 const ease = [0.2, 0, 0, 1] as const;
 
 /** the account's small likeness, or the house's default */
-function Likeness({ id, online }: { id: string; online?: boolean }) {
-  const [broken, setBroken] = useState(false);
-  const src = !broken ? portraitUrl(id) : null;
+function Likeness({ head, online }: { head: number | null; online?: boolean }) {
   return (
     <span className="relative shrink-0">
-      <img src={src ?? '/avatar-default.svg'} alt="" width={28} height={28} onError={() => setBroken(true)} className="h-7 w-7 rounded-full border border-brass-hairline object-cover" />
+      <img src={likenessUrl(head) ?? '/avatar-default.svg'} alt="" width={28} height={28} className="h-7 w-7 rounded-full border border-brass-hairline object-cover" />
       {online !== undefined && <span className={cn('absolute -bottom-0.5 -right-0.5 h-2 w-2 rounded-full ring-2 ring-enamel-850 transition-colors duration-300', online ? 'bg-bottle-400' : 'bg-iron-600')} aria-hidden />}
     </span>
   );
@@ -79,7 +78,7 @@ function FriendLine({ friend, hosting, invited, onWrite, onInvite, onAccept }: {
   const canInvite = !!hosting && !hosting.seats.some((s) => s.id === friend.account.id);
   return (
     <li className="group flex items-center gap-2.5 rounded-md px-2 py-1.5 transition-colors hover:bg-enamel-800">
-      <Likeness id={friend.account.id} online={friend.online} />
+      <Likeness head={friend.head} online={friend.online} />
       <button type="button" onClick={friend.status === 'friends' ? onWrite : undefined} className="min-w-0 flex-1 text-left" disabled={friend.status !== 'friends'}>
         <span className="flex items-center gap-2">
           <span className="truncate font-ui text-[13px] font-semibold text-paper-100">{friend.account.name}</span>
@@ -429,7 +428,7 @@ function RoomPane({ room, onBack }: { room: Room; onBack: () => void }) {
         <button type="button" onClick={onBack} aria-label={t('platform.telegraph.back')} className="flex h-7 w-7 items-center justify-center rounded-md text-iron-400 transition-colors hover:bg-enamel-800 hover:text-paper-100">
           <ArrowLeft size={15} aria-hidden />
         </button>
-        {friend && <Likeness id={friend.account.id} online={friend.online} />}
+        {friend && <Likeness head={friend.head} online={friend.online} />}
         <span className="min-w-0 flex-1 truncate font-ui text-[13px] font-semibold text-paper-100">{title}</span>
         {r?.kind === 'hall' && <span className="data-text text-iron-400">{t('platform.telegraph.hallCount', { count: desk?.hall.online ?? 0 })}</span>}
       </div>

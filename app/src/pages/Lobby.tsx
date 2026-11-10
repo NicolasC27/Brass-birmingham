@@ -11,7 +11,9 @@ import { freePersona, personaName } from '@/game/data';
 import { EXPERT } from '@/game/search';
 import type { BotPersona, PlayerColor } from '@/components/setup/constants';
 import { MAX_SEATS, canStart, freeColor, isOnline, lobby, setupFromTable, useTable } from '@/online/lobby';
-import { invite, portraitUrl, updateProfile, useDesk, useSession, useStranger } from '@/online/session';
+import { invite, updateProfile, useDesk, useSession, useStranger } from '@/online/session';
+import { headsTaken, unportrayed } from '@/online/table';
+import { likenessUrl } from '@/platform/heads';
 import type { Table, TableSeat } from '@/online/lobby';
 import Button from '@/components/platform/Button';
 import HeadPicker from '@/components/platform/HeadPicker';
@@ -215,7 +217,7 @@ function SeatSlot({
         aria-haspopup={hasControls ? 'dialog' : undefined}
         className={cn('relative rounded-full', isMe && !ready && 'shadow-[0_0_0_3px_var(--brass-hairline-strong)]')}
       >
-        <SeatToken seat={{ name: slot.name || '…', color: slot.color, kind: slot.kind, ready, host: isHostSeat, you: isMe, portrait: bot ? null : isMe ? me?.portrait ?? null : portraitUrl(slot.id) }} size={64} index={index} />
+        <SeatToken seat={{ name: slot.name || '…', color: slot.color, kind: slot.kind, ready, host: isHostSeat, you: isMe, portrait: bot ? null : likenessUrl(slot.head) }} size={64} index={index} />
       </button>
       {/* la plaque : pseudo + sous-ligne d'état */}
       {/* the plate grows with a long sub-line; the name never yields its height */}
@@ -258,7 +260,7 @@ function SeatSlot({
             {isMe && me && (
               <div className={cn('flex flex-col items-center gap-1.5', canColor && 'mt-2.5')}>
                 <span className="micro-label text-iron-400">{t('platform.heads.title')}</span>
-                <HeadPicker value={me.portrait} onPick={(likeness) => void updateProfile({ portrait: likeness }).catch(() => undefined)} size={26} />
+                <HeadPicker value={me.head} taken={headsTaken(table, me.id)} none onPick={(head) => void updateProfile({ head }).catch(() => undefined)} size={26} />
               </div>
             )}
             {bot && iAmHost && (
@@ -529,6 +531,8 @@ export default function Lobby() {
   const seated = table.seats.length;
   const startable = canStart(table);
   const humansWaiting = table.seats.filter((s) => s.kind === 'human' && !s.ready).length;
+  /* what holds the train: a face not chosen, or seats and readiness */
+  const startHint = unportrayed(table).length ? t('online.room.startHeads') : t('online.room.startHint', { n: humansWaiting, min: 2 });
   const readyCount = table.seats.filter((s) => s.kind === 'bot' || s.ready).length;
   const counting = countdown !== null && startable;
   const inviting = isOnline && !!mySeat && table.status === 'open' && seated < MAX_SEATS;
@@ -775,11 +779,11 @@ export default function Lobby() {
                             onClick={beginCountdown}
                             disabled={!startable}
                             icon={<Play size={16} aria-hidden />}
-                            title={startable ? undefined : t('online.room.startHint', { n: humansWaiting, min: 2 })}
+                            title={startable ? undefined : startHint}
                           >
                             {t('platform.lobby.start')}
                           </Button>
-                          {!startable && <p className="text-center font-ui text-[12.5px] text-iron-400">{t('online.room.startHint', { n: humansWaiting, min: 2 })}</p>}
+                          {!startable && <p className="text-center font-ui text-[12.5px] text-iron-400">{startHint}</p>}
                         </>
                       ) : (
                         <>

@@ -5,7 +5,8 @@ import { Armchair, Bot, ChevronDown, ChevronLeft, ChevronRight, Copy, Crown, Eye
 import { cn } from '@/lib/utils';
 import { useLang, useT } from '@/i18n';
 import { lobby } from '@/online/lobby';
-import { invite, portraitUrl, useDesk, useLine, useSession, useStranger, useTables } from '@/online/session';
+import { invite, useDesk, useLine, useSession, useStranger, useTables } from '@/online/session';
+import { likenessUrl } from '@/platform/heads';
 import { TABLE_PAGE, type TableFilter, type TableSort } from '@/online/table';
 import { LINKS, MERCHANT_BY_ID, PLAYER_COLORS, TOWNS, TOWN_BY_ID, activeBoard } from '@/game/data';
 import { MAP_URL, getBoardOptions } from '@/components/game/boardOptions';
@@ -89,7 +90,7 @@ function Carriage({ seat, size = 24, title }: { seat: CardSeat | null; size?: nu
     return <span className="block shrink-0 rounded-full border border-dashed border-iron-600 bg-enamel-700/30" style={{ width: size, height: size }} title={title} />;
   }
   const hex = PLAYER_COLORS[seat.color]?.hex ?? '#C9A45C';
-  const likeness = seat.kind === 'human' && !broken ? portraitUrl(seat.id) : null;
+  const likeness = seat.kind === 'human' && !broken ? likenessUrl(seat.head) : null;
   return (
     <span
       className={cn('relative block shrink-0 overflow-hidden rounded-full bg-enamel-700', seat.you && 'ring-2 ring-brass-300 ring-offset-1 ring-offset-enamel-850')}

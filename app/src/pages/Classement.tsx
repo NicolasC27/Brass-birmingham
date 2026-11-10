@@ -8,7 +8,8 @@ import RankEmblem from '@/components/platform/RankEmblem';
 import Skeleton from '@/components/platform/Skeleton';
 import PlayerToken from '@/components/setup/PlayerToken';
 import { isOnline } from '@/online/lobby';
-import { portraitUrl, useDesk, useLeaderboard, useSession, useStranger } from '@/online/session';
+import { useDesk, useLeaderboard, useSession, useStranger } from '@/online/session';
+import { likenessUrl } from '@/platform/heads';
 import CompaniesPanel from '@/components/platform/CompaniesPanel';
 import PageShell from '@/components/site/PageShell';
 import type { LeaderRow } from '@/online/table';
@@ -37,7 +38,7 @@ const rankOfRow = (row: LeaderRow): RankView => rankOf({ rating: row.rating, tie
 
 /* ------------------------------ Une ligne ------------------------------ */
 
-function HonourRow({ row, mine, likeness }: { row: Ranked; mine: boolean; likeness: string | null }) {
+function HonourRow({ row, mine }: { row: Ranked; mine: boolean }) {
   const t = useT();
   const lang = useLang();
   const rank = rankOfRow(row);
@@ -49,7 +50,7 @@ function HonourRow({ row, mine, likeness }: { row: Ranked; mine: boolean; likene
       </td>
       <td className="py-2.5 pr-3">
         <span className="flex items-center gap-2.5">
-          <MemberAvatar src={mine ? likeness : portraitUrl(row.id)} size={28} />
+          <MemberAvatar src={likenessUrl(row.head)} size={28} />
           <span className="truncate font-ui text-[13px] font-semibold text-paper-100">{row.name}</span>
           {row.color && <PlayerToken color={row.color} size={12} />}
           {mine && <span className="micro-label bg-[rgb(var(--signal-400)/.14)] px-1.5 py-0.5 text-signal-ink">{t('platform.ranking.you')}</span>}
@@ -76,7 +77,7 @@ function HonourRow({ row, mine, likeness }: { row: Ranked; mine: boolean; likene
 
 /* ------------------------------ Le tableau ------------------------------ */
 
-function HonourTable({ rows, pinned, me, likeness }: { rows: Ranked[]; pinned: Ranked | null; me: string; likeness: string | null }) {
+function HonourTable({ rows, pinned, me }: { rows: Ranked[]; pinned: Ranked | null; me: string }) {
   const t = useT();
   const cols: { key: string; right?: boolean }[] = [{ key: 'rank' }, { key: 'player' }, { key: 'tier' }, { key: 'cote', right: true }, { key: 'trend' }, { key: 'games', right: true }, { key: 'won', right: true }];
   return (
@@ -93,7 +94,7 @@ function HonourTable({ rows, pinned, me, likeness }: { rows: Ranked[]; pinned: R
         </thead>
         <tbody>
           {rows.map((r) => (
-            <HonourRow key={r.id} row={r} mine={r.id === me} likeness={likeness} />
+            <HonourRow key={r.id} row={r} mine={r.id === me} />
           ))}
           {pinned && (
             <>
@@ -102,7 +103,7 @@ function HonourTable({ rows, pinned, me, likeness }: { rows: Ranked[]; pinned: R
                   …
                 </td>
               </tr>
-              <HonourRow row={pinned} mine likeness={likeness} />
+              <HonourRow row={pinned} mine />
             </>
           )}
         </tbody>
@@ -226,7 +227,7 @@ export default function Classement() {
           ) : rows.length === 0 ? (
             <EmptyState plate="tables" title={t('platform.ranking.emptyTitle')} copy={t('platform.ranking.emptyCopy')} cta={{ label: t('platform.ranking.emptyCta'), to: '/online' }} />
           ) : (
-            <HonourTable rows={rows} pinned={pinned} me={session.id} likeness={session.portrait} />
+            <HonourTable rows={rows} pinned={pinned} me={session.id} />
           )}
         </motion.section>
         <Ladder mine={mine} />

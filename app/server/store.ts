@@ -88,8 +88,8 @@ export const DEPARTED_MS = 5 * 365 * 24 * 60 * 60 * 1000;
 const COMMON_PASSWORDS = new Set(['password', 'password1', 'password123', 'motdepasse', 'passwort', 'contraseña', 'contrasena', '12345678', '123456789', '1234567890', 'qwertyuiop', 'azertyuiop', 'qwerty123', 'azerty123', 'iloveyou', 'sunshine', 'princess', 'football', 'baseball', 'superman', 'trustno1', 'letmein1', 'welcome1', 'admin123', 'abcd1234', 'abc12345', '11111111', '00000000', 'birmingham', 'blackrail', 'brassworks', 'brass1234', 'wedgwood']);
 export const MAX_MOTTO = 80;
 /** a likeness travels as a data URL: 160 px square in WebP is ten to twenty thousand characters */
-export const MAX_PORTRAIT = 64_000;
-const PORTRAIT_DATA = /^data:image\/(webp|jpeg|png);base64,[A-Za-z0-9+/]+=*$/;
+/** a head of the house, 1 to 4, as the register holds it; anything else is none */
+const headOf = (v: unknown): number | null => (typeof v === 'number' && Number.isInteger(v) && v >= 1 && v <= 4 ? v : null);
 /** a page of notes beside one game, and no more */
 export const MAX_NOTES = 32_000;
 /** a line in the parlour is kept so long, then let go */
@@ -300,6 +300,7 @@ const GROWTH: [table: string, column: string, ddl: string][] = [
   ['accounts', 'favoriteColor', 'text'],
   ['accounts', 'createdIp', 'text'],
   ['accounts', 'portrait', 'text'],
+  ['accounts', 'head', 'integer'],
   ['accounts', 'acceptedAt', 'integer'],
   ['accounts', 'closedAt', 'integer'],
   ['accounts', 'guest', 'integer not null default 0'],
@@ -373,7 +374,7 @@ interface AccountRow {
   verifiedAt: number | null;
   motto: string;
   favoriteColor: string | null;
-  portrait: string | null;
+  head: number | null;
   acceptedAt: number | null;
   closedAt: number | null;
   newsletter: number | null;
@@ -387,7 +388,7 @@ export interface Origin {
 }
 
 const COLORS: PlayerColor[] = ['brass', 'oxblood', 'verdigris', 'steel'];
-const ACCOUNT_COLUMNS = 'id, name, createdAt, email, verifiedAt, motto, favoriteColor, acceptedAt, closedAt, newsletter, portrait, guest';
+const ACCOUNT_COLUMNS = 'id, name, createdAt, email, verifiedAt, motto, favoriteColor, acceptedAt, closedAt, newsletter, head, guest';
 
 function accountOf(r: AccountRow): Account {
   return {
@@ -398,7 +399,7 @@ function accountOf(r: AccountRow): Account {
     verified: r.verifiedAt !== null,
     motto: r.motto ?? '',
     favoriteColor: COLORS.includes(r.favoriteColor as PlayerColor) ? (r.favoriteColor as PlayerColor) : null,
-    portrait: typeof r.portrait === 'string' && r.portrait ? r.portrait : null,
+    head: headOf(r.head),
     acceptedAt: r.acceptedAt,
     closedAt: r.closedAt,
     newsletter: r.newsletter === 1,
@@ -698,13 +699,11 @@ export class Store {
   }
 
   /** the profile, within its margins */
-  setProfile(id: string, patch: { motto?: string; favoriteColor?: PlayerColor | null; newsletter?: boolean; portrait?: string | null }): void {
+  setProfile(id: string, patch: { motto?: string; favoriteColor?: PlayerColor | null; newsletter?: boolean; head?: number | null }): void {
     if (patch.newsletter !== undefined) this.db.prepare('update accounts set newsletter = ? where id = ?').run(patch.newsletter ? 1 : 0, id);
-    /* the likeness: a small square picture as a data URL, or none; anything
-       else — too large, not a picture — is not taken */
-    if (patch.portrait !== undefined) {
-      const ok = patch.portrait === null || (patch.portrait.length <= MAX_PORTRAIT && PORTRAIT_DATA.test(patch.portrait));
-      if (ok) this.db.prepare('update accounts set portrait = ? where id = ?').run(patch.portrait, id);
+    /* the head of the house worn at the tables: 1 to 4, or none */
+    if (patch.head !== undefined) {
+      this.db.prepare('update accounts set head = ? where id = ?').run(headOf(patch.head), id);
     }
     if (patch.motto !== undefined) this.db.prepare('update accounts set motto = ? where id = ?').run(patch.motto.trim().slice(0, MAX_MOTTO), id);
     if (patch.favoriteColor !== undefined) this.db.prepare('update accounts set favoriteColor = ? where id = ?').run(patch.favoriteColor && COLORS.includes(patch.favoriteColor) ? patch.favoriteColor : null, id);
@@ -829,7 +828,7 @@ export class Store {
     try {
       this.db.prepare('insert or replace into departed (accountId, name, email, closedAt) values (?, ?, ?, ?)').run(accountId, row.name, row.email, now);
       this.db
-        .prepare("update accounts set name = ?, folded = ?, email = null, emailFolded = null, secret = ?, motto = '', favoriteColor = null, portrait = null, createdIp = null, closedAt = ? where id = ?")
+        .prepare("update accounts set name = ?, folded = ?, email = null, emailFolded = null, secret = ?, motto = '', favoriteColor = null, portrait = null, head = null, createdIp = null, closedAt = ? where id = ?")
         .run(gone, fold(gone), seal(randomBytes(32).toString('hex')), now, accountId);
       for (const table of ['sessions', 'letters', 'feedback', 'purses', 'papers', 'notes', 'faults']) {
         try {
@@ -951,7 +950,7 @@ export class Store {
     for (const r of rows) {
       const other = this.account(r.aId === accountId ? r.bId : r.aId);
       if (!other) continue;
-      out.push({ id: r.id, account: { id: other.id, name: other.name }, status: r.acceptedAt ? 'friends' : r.askedBy === accountId ? 'asked' : 'asks', online: false });
+      out.push({ id: r.id, account: { id: other.id, name: other.name }, head: other.head, status: r.acceptedAt ? 'friends' : r.askedBy === accountId ? 'asked' : 'asks', online: false });
     }
     return out;
   }
@@ -1562,13 +1561,13 @@ export class Store {
   leaderboard(season: Season, meId: string, limit = 50): Leaderboard {
     const rows = this.db
       .prepare(
-        'select r.accountId as id, a.name, a.favoriteColor as color, r.rating, r.games, r.won, r.trend from ratings r join accounts a on a.id = r.accountId where r.season = ? and r.games >= 1 and a.verifiedAt is not null order by r.rating desc, r.games desc, a.name collate nocase',
+        'select r.accountId as id, a.name, a.head, a.favoriteColor as color, r.rating, r.games, r.won, r.trend from ratings r join accounts a on a.id = r.accountId where r.season = ? and r.games >= 1 and a.verifiedAt is not null order by r.rating desc, r.games desc, a.name collate nocase',
       )
-      .all(season.id) as { id: string; name: string; color: string | null; rating: number; games: number; won: number; trend: string }[];
+      .all(season.id) as { id: string; name: string; head: number | null; color: string | null; rating: number; games: number; won: number; trend: string }[];
     const all: LeaderRow[] = rows.map((r) => {
       const trend = JSON.parse(r.trend) as number[];
       const { tier } = ratingOf({ rating: r.rating, games: r.games, won: r.won, trend });
-      return { id: r.id, name: r.name, color: COLORS.includes(r.color as PlayerColor) ? (r.color as PlayerColor) : null, rating: r.rating, tier, games: r.games, won: r.won, trend };
+      return { id: r.id, name: r.name, head: headOf(r.head), color: COLORS.includes(r.color as PlayerColor) ? (r.color as PlayerColor) : null, rating: r.rating, tier, games: r.games, won: r.won, trend };
     });
     const at = all.findIndex((r) => r.id === meId);
     return { season, players: all.length, rows: all.slice(0, limit), me: at < 0 ? null : { ...all[at], rank: at + 1 } };

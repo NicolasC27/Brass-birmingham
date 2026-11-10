@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import { motion } from 'framer-motion';
 import MemberAvatar from '@/components/platform/MemberAvatar';
 import { useSession } from '@/online/session';
+import { likenessUrl } from '@/platform/heads';
 import { cn } from '@/lib/utils';
 
 /* ------------------------------------------------------------------ */
@@ -43,7 +44,7 @@ export default function MemberPlate({
   aside?: ReactNode;
   className?: string;
 }) {
-  const likeness = useSession()?.portrait ?? null;
+  const likeness = likenessUrl(useSession()?.head);
   return (
     <motion.section initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.24, ease }} className={cn('relative overflow-hidden console', className)}>
       <div aria-hidden className="tex-ledger pointer-events-none absolute inset-0 bg-repeat-y opacity-50" style={{ maskImage: SHEET_FADE, WebkitMaskImage: SHEET_FADE }} />

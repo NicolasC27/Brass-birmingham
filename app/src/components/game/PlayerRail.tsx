@@ -17,7 +17,7 @@ import { lanternStop, rankDrift, shownRailMode, spentShare } from './railLogic';
 import { useNarrow } from '@/hooks/use-narrow';
 import { money as sum, useT } from '@/i18n';
 import { useTable } from '@/online/lobby';
-import { portraitUrl } from '@/online/session';
+import { likenessUrl } from '@/platform/heads';
 import type { PlayerState } from '@/game/types';
 import { cn } from '@/lib/utils';
 import { portraitFor } from './portraits';
@@ -77,8 +77,8 @@ export function PortraitMedallion({ p, index, active, size, bare }: { p: PlayerS
   const color = PLAYER_COLORS[p.color] ?? PLAYER_COLORS.brass;
   const code = useGame((st) => st.code);
   const table = useTable(code);
-  const seatId = table?.seats[index]?.kind === 'human' ? table.seats[index].id : null;
-  const likeness = !p.isBot && seatId ? portraitUrl(seatId) : null;
+  const seat = table?.seats[index];
+  const likeness = !p.isBot && seat?.kind === 'human' ? likenessUrl(seat.head) : null;
   const [broken, setBroken] = useState<string | null>(null);
   const src = likeness && broken !== likeness ? likeness : portraitFor(p, index);
   return (

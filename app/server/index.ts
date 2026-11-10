@@ -300,7 +300,7 @@ export function serve(options: ServeOptions = {}): Promise<Serving> {
   /* the direction: a few addresses, named by the environment, never by the register */
   const admins = new Set((options.admins ?? (process.env.BLACKRAIL_ADMINS ?? '').split(',')).map((e) => e.trim().toLowerCase()).filter(Boolean));
   const isAdmin = (a: { email: string | null; verified: boolean }): boolean => a.verified && !!a.email && admins.has(a.email.trim().toLowerCase());
-  const me = (a: Account): Me => ({ id: a.id, name: a.name, email: a.email, verified: a.verified, motto: a.motto, favoriteColor: a.favoriteColor, portrait: a.portrait, createdAt: a.createdAt, newsletter: a.newsletter, guest: a.guest, ...(isAdmin(a) ? { admin: true } : {}) });
+  const me = (a: Account): Me => ({ id: a.id, name: a.name, email: a.email, verified: a.verified, motto: a.motto, favoriteColor: a.favoriteColor, head: a.head, createdAt: a.createdAt, newsletter: a.newsletter, guest: a.guest, ...(isAdmin(a) ? { admin: true } : {}) });
   const waitlist = new Waitlist(file);
   const waitLetter = waitLetters(options.appUrl ?? process.env.APP_URL ?? 'http://localhost:3000', options.officeUrl ?? process.env.OFFICE_URL ?? '');
   const mailCap = options.mailCap ?? (Number.parseInt(process.env.MAIL_DAILY_CAP ?? '', 10) || MAIL_DAILY_CAP);
@@ -416,20 +416,6 @@ export function serve(options: ServeOptions = {}): Promise<Serving> {
       return;
     }
     const own = dev && loopback(req);
-    /* a member's likeness, by account id: the picture itself, or nothing */
-    if (url.pathname.startsWith('/portrait/')) {
-      const id = decodeURIComponent(url.pathname.slice('/portrait/'.length));
-      const data = store.account(id)?.portrait ?? null;
-      const m = data && /^data:(image\/[a-z]+);base64,(.+)$/.exec(data);
-      if (!m) {
-        headed(res, 404, 'text/plain');
-        res.end('Not found\n');
-        return;
-      }
-      res.writeHead(200, { 'content-type': m[1], 'cache-control': 'public, max-age=120', 'access-control-allow-origin': '*' });
-      res.end(Buffer.from(m[2], 'base64'));
-      return;
-    }
     /* the counter: with no real post, the letters can be read here */
     if (url.pathname === '/letters') {
       if (!own || !post.kept) {
@@ -871,7 +857,14 @@ export function serve(options: ServeOptions = {}): Promise<Serving> {
         return;
       }
       case 'profile': {
-        store.setProfile(who.id, { motto: m.motto, favoriteColor: m.favoriteColor, newsletter: typeof m.newsletter === 'boolean' ? m.newsletter : undefined, portrait: typeof m.portrait === 'string' || m.portrait === null ? m.portrait : undefined });
+        store.setProfile(who.id, {
+          motto: m.motto,
+          favoriteColor: m.favoriteColor,
+          newsletter: typeof m.newsletter === 'boolean' ? m.newsletter : undefined,
+          head: typeof m.head === 'number' || m.head === null ? m.head : undefined,
+        });
+        /* the seats this member holds at open tables wear the new head */
+        if (m.head !== undefined) hall.wear(who.id);
         pushMe(who.id, m.rid, c);
         return;
       }
@@ -1129,7 +1122,8 @@ export function serve(options: ServeOptions = {}): Promise<Serving> {
       }
       case 'queue':
         /* the queues are for verified accounts, and say nothing to the others */
-        if (who.verified && (m.mode === 'quick' || m.mode === 'ranked')) hall.queue(who.id, m.mode, !!m.on);
+        /* …and a head of the house is worn before boarding: a train leaves with every face known */
+        if (who.verified && (m.mode === 'quick' || m.mode === 'ranked') && (!m.on || store.account(who.id)?.head)) hall.queue(who.id, m.mode, !!m.on);
         return;
       case 'friend': {
         hall.befriend(who, m.name);

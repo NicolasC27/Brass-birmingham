@@ -13,7 +13,7 @@ import { Queue } from './queue';
 import type { Match, Mode, Waits } from './queue';
 import { seasonAt } from './rating';
 import { pickTableName } from '@/online/tableNames';
-import type { Store } from './store';
+import type { Account, Store } from './store';
 import { PaceWatch, sameHouse } from './watch';
 
 /* ------------------------------------------------------------------ */
@@ -332,6 +332,18 @@ export class Hall {
     };
   }
 
+  /** the member's likeness changed: every chair they hold at a table not yet
+   *  started says so, and the rooms are told */
+  wear(accountId: string): void {
+    const account = this.store.account(accountId);
+    for (const [code, room] of this.rooms) {
+      if (room.table.status !== 'open' || this.started(room)) continue;
+      if (!room.table.seats.some((s) => s.id === accountId && s.kind === 'human')) continue;
+      room.table = { ...room.table, seats: room.table.seats.map((s) => (s.id === accountId ? { ...s, ...likenessOf(account) } : s)), updatedAt: Date.now() };
+      this.write(code);
+    }
+  }
+
   /** a chair for whoever cannot choose: the open table nearest to starting */
   seatMe(me: Identity, color?: PlayerColor): Table {
     const open = [...this.rooms.values()].filter((r) => !r.table.ranked && r.table.status === 'open' && !this.started(r) && r.table.seats.length < MAX_SEATS && !r.table.seats.some((s) => s.id === me.id));
@@ -385,7 +397,7 @@ export class Hall {
     for (const id of m.ids) {
       const account = this.store.account(id);
       if (!account || !account.verified) continue;
-      seats.push({ ...seatFor(account, { seats }, account.favoriteColor ?? undefined), ready: true });
+      seats.push({ ...seatFor(account, { seats }, account, account.favoriteColor ?? undefined), ready: true });
     }
     if (!seats.length) return;
     for (const machine of COMPANY.slice(0, ranked ? 0 : m.machines)) {
@@ -482,7 +494,7 @@ export class Hall {
       code,
       name: this.drawName(),
       hostId: me.id,
-      seats: [seatFor(me, { seats: [] }, color)],
+      seats: [seatFor(me, { seats: [] }, this.store.account(me.id), color)],
       options: houseRules(options),
       status: 'open',
       createdAt: now,
@@ -511,7 +523,7 @@ export class Hall {
     if (room.table.ranked) throw new Error('refused' satisfies LobbyError);
     if (room.table.status !== 'open' || this.started(room)) throw new Error('started' satisfies LobbyError);
     if (room.table.seats.length >= MAX_SEATS) throw new Error('full' satisfies LobbyError);
-    room.table = { ...room.table, seats: [...room.table.seats, seatFor(me, room.table, color)], updatedAt: Date.now() };
+    room.table = { ...room.table, seats: [...room.table.seats, seatFor(me, room.table, this.store.account(me.id), color)], updatedAt: Date.now() };
     this.write(code);
     return room.table;
   }
@@ -712,8 +724,15 @@ function sketch(s: GameState): Sketch {
   return { ...(s.board ? { board: s.board } : {}), towns, links };
 }
 
-function seatFor(me: Identity, table: Pick<Table, 'seats'>, color?: PlayerColor): TableSeat {
-  return { id: me.id, name: me.name, color: freeColor(table, color), kind: 'human', ready: false, joinedAt: Date.now() };
+/** what a member's seat says of their face: the head of the house they
+ *  wear, and whether they wear one at all */
+function likenessOf(account: Pick<Account, 'head'> | null): Pick<TableSeat, 'head' | 'likeness'> {
+  const head = account?.head ?? null;
+  return { head, likeness: head !== null };
+}
+
+function seatFor(me: Identity, table: Pick<Table, 'seats'>, account: Pick<Account, 'head'> | null, color?: PlayerColor): TableSeat {
+  return { id: me.id, name: me.name, color: freeColor(table, color), kind: 'human', ready: false, joinedAt: Date.now(), ...likenessOf(account) };
 }
 
 /** the house rules as the server will have them — never the client's object.

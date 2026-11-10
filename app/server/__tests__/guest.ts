@@ -122,6 +122,9 @@ export class Guest {
     await this.until('the letter', () => letters.has(this.email));
     this.send({ t: 'verify', rid: ++this.rid, token: tokenIn(letters.get(this.email), 'verify') });
     await this.until('the address to be verified', () => this.me?.verified === true);
+    /* a head of the house, as every member wears one before a train leaves */
+    this.send({ t: 'profile', rid: ++this.rid, head: 1 });
+    await this.until('the head', () => this.me?.head === 1);
   }
 
   /** no account, no letter: the office opens one so a first game has

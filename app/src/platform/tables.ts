@@ -15,8 +15,10 @@ export type TableMode = 'normal' | 'ranked';
 export type TableState = 'open' | 'live' | 'full';
 
 export interface CardSeat {
-  /** the account's id (a machine's is its own); names the likeness the office serves */
+  /** the account's id (a machine's is its own) */
   id: string;
+  /** the head of the house a member wears, if one */
+  head?: number | null;
   name: string;
   color: PlayerColor;
   kind: 'human' | 'bot';
@@ -58,6 +60,7 @@ export function toCard(x: PublicTable, mine?: TableSummary, myName?: string, lan
     name: s.name,
     color: s.color,
     kind: s.kind,
+    head: s.head ?? null,
     host: s.kind === 'human' && s.name === x.hostName,
     you: !!myName && s.kind === 'human' && s.name === myName,
   }));

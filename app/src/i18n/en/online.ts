@@ -63,6 +63,7 @@ export default {
     remove: 'Free this seat',
     leave: 'Leave',
     start: 'Ring the bell',
+    startHeads: 'Every passenger picks a head before the train leaves.',
     startHint: 'At least {min} [min|seat|seats], everyone ready ({n} still waiting).',
     waitingHost: 'The host rings the bell once everyone is ready.',
     hostSets: 'The host sets the rules',

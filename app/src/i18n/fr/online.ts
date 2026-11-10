@@ -63,6 +63,7 @@ export default {
     remove: 'Libérer ce siège',
     leave: 'Quitter',
     start: 'Sonner la cloche',
+    startHeads: 'Chaque voyageur choisit sa tête avant le départ.',
     startHint: 'Il faut au moins {min} [min|siège|sièges] et que chacun se déclare prêt ({n} en attente).',
     waitingHost: 'L’hôte sonnera la cloche quand tout le monde sera prêt.',
     hostSets: 'L’hôte fixe les règles',

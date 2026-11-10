@@ -9,6 +9,7 @@ import { rankOf } from '@/platform/rank';
 import Button from '@/components/platform/Button';
 import HeadPicker from '@/components/platform/HeadPicker';
 import MemberAvatar from '@/components/platform/MemberAvatar';
+import { likenessUrl } from '@/platform/heads';
 import Modal from '@/components/platform/Modal';
 import RankBadge from '@/components/platform/RankBadge';
 import type { TableMode } from '@/components/platform/ModeCard';
@@ -118,8 +119,9 @@ export default function Matchmaking({ onToast }: { onToast: Notify }) {
     const active = queueMode === mode;
     /* a line takes names: a visitor has none to give, so both counters are
        closed to them, and the one way in is printed under the pair */
-    const closed = !serverUp || !session || lockedRanked;
-    const reason = !serverUp ? (line === 'connecting' ? t('platform.play.idleConnecting') : t('platform.play.idleOffline')) : lockedRanked ? t('platform.play.verifyFirst') : null;
+    const faceless = !!session && session.head === null;
+    const closed = !serverUp || !session || lockedRanked || faceless;
+    const reason = !serverUp ? (line === 'connecting' ? t('platform.play.idleConnecting') : t('platform.play.idleOffline')) : lockedRanked ? t('platform.play.verifyFirst') : faceless ? t('platform.play.needHead') : null;
     return (
       <motion.div
         id={ranked ? 'file-classee' : 'file-normale'}
@@ -143,12 +145,12 @@ export default function Matchmaking({ onToast }: { onToast: Notify }) {
         </div>
         <p className="mt-3 font-serif text-[13px] italic leading-snug text-paper-300">{reason ?? t(ranked ? 'platform.queue.rankedRule' : 'platform.queue.normalRule')}</p>
         {/* the head worn at the table that is coming: one of the house's four,
-            picked while the train is made up and kept by the office */}
-        {active && queue && session && (
+            to be picked before boarding, and changed while the train is made up */}
+        {session && (faceless || (active && queue)) && (
           <div className="mt-3 flex flex-wrap items-center gap-2.5">
-            <MemberAvatar src={session.portrait} size={34} />
+            <MemberAvatar src={likenessUrl(session.head)} size={34} />
             <span className="micro-label text-iron-400">{t('platform.heads.title')}</span>
-            <HeadPicker value={session.portrait} onPick={(likeness) => void updateProfile({ portrait: likeness }).catch(() => undefined)} size={28} />
+            <HeadPicker value={session.head} onPick={(head) => void updateProfile({ head }).catch(() => undefined)} size={28} />
           </div>
         )}
         {/* the bar sits at the foot of the notice: twin counters, twin tickets */}

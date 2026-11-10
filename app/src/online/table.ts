@@ -24,6 +24,13 @@ export interface TableSeat {
   minutes?: number | null;
   ready: boolean;
   joinedAt: number;
+  /** the head of the house this member wears (1 to 4); set by the office
+   *  on a human seat, so the room can keep two seats from wearing the same */
+  head?: number | null;
+  /** the member has a head: the office sets it on every human seat, and a
+   *  train leaves only when every seat has one. Absent (a local table, an
+   *  old register): not asked */
+  likeness?: boolean;
 }
 
 export interface Table {
@@ -67,8 +74,8 @@ export interface Me extends Identity {
   verified: boolean;
   motto: string;
   favoriteColor: PlayerColor | null;
-  /** the member's own likeness, a small square picture kept at the office (a data URL), or none */
-  portrait: string | null;
+  /** the head of the house the member wears at the tables (1 to 4), or none yet */
+  head: number | null;
   createdAt: number;
   /** the Monday edition by post, asked for */
   newsletter: boolean;
@@ -91,7 +98,7 @@ export interface TableSummary {
   code: string;
   name: string;
   hostId: string;
-  seats: { id: string; name: string; color: PlayerColor; kind: 'human' | 'bot' }[];
+  seats: { id: string; name: string; color: PlayerColor; kind: 'human' | 'bot'; head?: number | null }[];
   status: 'open' | 'playing' | 'over';
   era?: Era;
   round?: number;
@@ -118,7 +125,7 @@ export interface PublicTable {
   name: string;
   hostName: string;
   /** the account id names the likeness the office serves */
-  seats: { id: string; name: string; color: PlayerColor; kind: 'human' | 'bot' }[];
+  seats: { id: string; name: string; color: PlayerColor; kind: 'human' | 'bot'; head?: number | null }[];
   status: 'open' | 'playing';
   eraLength: 'short' | 'standard';
   era?: Era;
@@ -258,6 +265,8 @@ export interface Season {
 export interface LeaderRow {
   id: string;
   name: string;
+  /** the head of the house they wear, if one */
+  head: number | null;
   color: PlayerColor | null;
   rating: number;
   tier: Tier;
@@ -384,6 +393,8 @@ export interface Stats {
 export interface Friend {
   id: string;
   account: Identity;
+  /** the head of the house they wear, if one */
+  head: number | null;
   status: 'friends' | 'asks' | 'asked';
   /** a socket of theirs is open right now */
   online: boolean;
@@ -440,5 +451,11 @@ export function setupFromTable(table: Table): StoredSetup {
 }
 
 export function canStart(table: Table): boolean {
-  return table.status === 'open' && table.seats.length >= 2 && table.seats.every((s) => s.kind === 'bot' || s.ready);
+  return table.status === 'open' && table.seats.length >= 2 && table.seats.every((s) => s.kind === 'bot' || s.ready) && unportrayed(table).length === 0;
 }
+
+/** the human seats whose member has no head yet: the train waits for them */
+export const unportrayed = (table: Pick<Table, 'seats'>): TableSeat[] => table.seats.filter((s) => s.kind === 'human' && s.likeness === false);
+
+/** the heads worn at the table by seats other than `me` */
+export const headsTaken = (table: Pick<Table, 'seats'>, me: string): Set<number> => new Set(table.seats.filter((s) => s.id !== me && typeof s.head === 'number').map((s) => s.head as number));

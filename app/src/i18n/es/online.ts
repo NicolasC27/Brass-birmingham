@@ -63,6 +63,7 @@ export default {
     remove: 'Liberar este asiento',
     leave: 'Salir',
     start: 'Tocar la campana',
+    startHeads: 'Cada viajero elige su cabeza antes de la salida.',
     startHint: '[min|Hace|Hacen] falta al menos {min} [min|asiento|asientos] y que todos estén listos ({n} en espera).',
     waitingHost: 'El anfitrión tocará la campana cuando todos estén listos.',
     hostSets: 'El anfitrión fija las reglas',

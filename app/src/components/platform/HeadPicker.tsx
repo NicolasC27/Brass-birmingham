@@ -1,50 +1,69 @@
+import { Ban } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useT } from '@/i18n';
-import { HEADS, bakeHead, headUrl, useBakedHeads } from '@/platform/heads';
+import { HEADS, headUrl } from '@/platform/heads';
 
 /* ------------------------------------------------------------------ */
-/* HeadPicker — the four heads of the house (the founder, the spinner, */
-/* the forgemaster, the shipowner), one of which a member may wear at  */
-/* the tables in place of a picture of their own. A head is a picture  */
-/* like any other to the office: picked, it is cut to the same 160 px  */
-/* of WebP and kept as the member's likeness, so every seat, rail and  */
-/* plate that shows a likeness shows it without knowing it is a head.  */
+/* HeadPicker — the four heads of the house, one to wear at the        */
+/* tables. A head worn by another seat of the same table is not        */
+/* offered; « none » gives the head back, so another may be picked.    */
 /* ------------------------------------------------------------------ */
 
 export interface HeadPickerProps {
-  /** the likeness worn now (a data URL), to mark the head it is, if any */
-  value: string | null;
-  /** a head picked: its likeness, baked */
-  onPick: (likeness: string) => void;
+  /** the head worn now, if any */
+  value: number | null;
+  /** the heads other seats of the table wear: not to be picked */
+  taken?: ReadonlySet<number>;
+  /** a head picked, or none */
+  onPick: (head: number | null) => void;
+  /** « none » offered, to give a head back */
+  none?: boolean;
   /** the medallions' size in px */
   size?: number;
   className?: string;
 }
 
-export default function HeadPicker({ value, onPick, size = 40, className }: HeadPickerProps) {
+export default function HeadPicker({ value, taken, onPick, none = false, size = 40, className }: HeadPickerProps) {
   const t = useT();
-  const heads = useBakedHeads();
   return (
     <div role="radiogroup" aria-label={t('platform.heads.title')} className={cn('flex items-center gap-1.5', className)}>
       {HEADS.map((n) => {
-        const worn = value !== null && heads[n] === value;
+        const worn = value === n;
+        const busy = !worn && !!taken?.has(n);
         return (
           <button
             key={n}
             type="button"
             role="radio"
             aria-checked={worn}
-            title={t(`platform.heads.h${n}`)}
-            onClick={() => void bakeHead(n).then(onPick)}
+            disabled={busy}
+            title={busy ? `${t(`platform.heads.h${n}`)} — ${t('platform.heads.taken')}` : t(`platform.heads.h${n}`)}
+            onClick={() => onPick(n)}
             className={cn(
               'rounded-full border p-[2px] transition-[opacity,border-color]',
-              worn ? 'border-brass-500 bg-brass-500/15' : 'border-enamel-line opacity-60 hover:border-brass-hairline-strong hover:opacity-100',
+              worn ? 'border-brass-500 bg-brass-500/15' : busy ? 'cursor-not-allowed border-transparent opacity-25 grayscale' : 'border-enamel-line opacity-60 hover:border-brass-hairline-strong hover:opacity-100',
             )}
           >
             <img src={headUrl(n)} alt={t(`platform.heads.h${n}`)} draggable={false} className="rounded-full object-cover" style={{ width: size, height: size }} />
           </button>
         );
       })}
+      {none && (
+        <button
+          type="button"
+          role="radio"
+          aria-checked={value === null}
+          title={t('platform.heads.none')}
+          onClick={() => onPick(null)}
+          className={cn(
+            'flex items-center justify-center rounded-full border text-iron-400 transition-[opacity,border-color]',
+            value === null ? 'border-brass-500 bg-brass-500/15 text-brass-300' : 'border-enamel-line opacity-60 hover:border-brass-hairline-strong hover:opacity-100',
+          )}
+          style={{ width: size + 6, height: size + 6 }}
+        >
+          <Ban aria-hidden style={{ width: size * 0.5, height: size * 0.5 }} />
+        </button>
+      )}
     </div>
   );
 }

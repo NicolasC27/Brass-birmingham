@@ -1,4 +1,3 @@
-import { ONLINE_URL } from './net';
 import { useEffect, useSyncExternalStore } from 'react';
 import type { PlayerColor } from '@/components/setup/constants';
 import { leaveOnlineTable } from '@/game/store';
@@ -219,17 +218,10 @@ export async function resendLetter(email?: string): Promise<void> {
   await wire().ask((rid) => ({ t: 'resend', rid, email: email?.trim() }));
 }
 
-export async function updateProfile(patch: { motto?: string; favoriteColor?: PlayerColor | null; newsletter?: boolean; portrait?: string | null }): Promise<void> {
+export async function updateProfile(patch: { motto?: string; favoriteColor?: PlayerColor | null; newsletter?: boolean; head?: number | null }): Promise<void> {
   await wire().ask((rid) => ({ t: 'profile', rid, ...patch }));
 }
 
-/** where a member's likeness is served from, by account id — the office
- *  answers 404 for a member without one, and the picture falls back */
-export function portraitUrl(accountId: string, stamp?: number): string | null {
-  if (!ONLINE_URL) return null;
-  const base = ONLINE_URL.replace(/^ws/, 'http').replace(/\/+$/, '');
-  return `${base}/portrait/${encodeURIComponent(accountId)}${stamp ? `?v=${stamp}` : ''}`;
-}
 
 /** an idea or a bug, to the house */
 export async function sendFeedback(page: string, kind: 'idea' | 'bug', text: string): Promise<void> {

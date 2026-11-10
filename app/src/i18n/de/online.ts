@@ -63,6 +63,7 @@ export default {
     remove: 'Diesen Platz freigeben',
     leave: 'Verlassen',
     start: 'Die Glocke läuten',
+    startHeads: 'Jeder Fahrgast wählt vor der Abfahrt seinen Kopf.',
     startHint: 'Es braucht mindestens {min} [min|Platz|Plätze], und alle müssen sich bereit melden ({n} [n|wartet|warten] noch).',
     waitingHost: 'Der Gastgeber läutet die Glocke, sobald alle bereit sind.',
     hostSets: 'Der Gastgeber legt die Regeln fest',
