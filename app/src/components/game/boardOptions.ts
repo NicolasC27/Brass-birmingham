@@ -172,7 +172,8 @@ export const minimapWidth = (o: { minimapSize: MinimapSize; minimapWidth: number
 
 /** beginner assistance: the table's house rule, or at home the board setting */
 export function aidOn(assist: boolean | undefined, online: boolean): boolean {
-  return !!assist || (!online && getBoardOptions().beginnerAid);
+  void online;
+  return !!assist || getBoardOptions().beginnerAid;
 }
 
 export interface BoardOptions {

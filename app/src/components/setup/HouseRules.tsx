@@ -5,8 +5,9 @@ import { useT } from "@/i18n";
 import { BOARD_IDS, DEFAULT_BOARD } from "@/game/boards";
 import Segmented from "./Segmented";
 import Tip from "./Tip";
-import type { EraLength, MarketTemper, SetupOptions } from "./constants";
+import type { EraLength, SetupOptions } from "./constants";
 import { cn } from "@/lib/utils";
+import { useSession } from "@/online/session";
 
 const TIMER_VALUES = ["off", "2", "5"];
 
@@ -71,6 +72,7 @@ export default function HouseRules({
   bare?: boolean;
 }) {
   const t = useT();
+  const admin = useSession()?.admin === true;
   return (
     <section
       aria-label={t("setup.houseRules.ariaLabel")}
@@ -89,7 +91,8 @@ export default function HouseRules({
       </header>
 
       <div className="mt-1">
-        {BOARD_IDS.length > 1 && (
+        {/* a second country is the direction's to try, not yet everyone's */}
+        {BOARD_IDS.length > 1 && admin && (
           <RuleRow
             compact={compact}
             index={0}
@@ -123,26 +126,8 @@ export default function HouseRules({
           />
         </RuleRow>
 
-        <RuleRow
-          compact={compact}
-          index={1}
-          label={t("setup.houseRules.marketTemper.label")}
-          hint={t("setup.houseRules.marketTemper.hint")}
-        >
-          {/* the beta is said of the word, in its run, not hung over the group */}
-          <Segmented<MarketTemper>
-            readOnly={readOnly}
-            ariaLabel={t("setup.houseRules.marketTemper.ariaLabel")}
-            value={options.marketTemper}
-            onChange={(marketTemper) => onChange({ marketTemper })}
-            options={[
-              { value: "calm", label: t("setup.houseRules.marketTemper.calm") },
-              { value: "standard", label: t("setup.houseRules.marketTemper.standard") },
-              { value: "volatile", label: t("setup.houseRules.marketTemper.volatile"), note: t("setup.houseRules.marketTemper.beta") },
-            ]}
-          />
-        </RuleRow>
-
+        {/* the market's temper stays standard: the calm and the volatile
+            markets were an experiment, kept for the challenges alone */}
         <RuleRow
           compact={compact}
           index={2}
@@ -161,66 +146,8 @@ export default function HouseRules({
           />
         </RuleRow>
 
-        <RuleRow
-          compact={compact}
-          index={3}
-          label={t("setup.houseRules.assist.label")}
-          hint={t("setup.houseRules.assist.hint")}
-        >
-          {/* Interrupteur laiton (create.md §A4) : piste enamel, curseur dégradé */}
-          <button
-            type="button"
-            role="switch"
-            aria-checked={!!options.assist}
-            disabled={readOnly}
-            aria-disabled={readOnly || undefined}
-            onClick={() => onChange({ assist: !options.assist })}
-            className={cn("inline-flex items-center gap-2.5", readOnly && "cursor-default")}
-          >
-            <span
-              aria-hidden
-              className={cn(
-                /* the rail is ruled as well as filled: on the day's paper the
-                   fill alone is barely a step off the page */
-                "relative h-6 w-11 rounded-full shadow-[inset_0_0_0_1px_var(--gz-line-control)] transition-colors duration-[180ms]",
-                options.assist ? "bg-bottle-500" : "bg-enamel-700",
-                /* the lever put out: the register's own off surface, no plate */
-                readOnly && "!bg-[rgb(var(--state-off-bg))]",
-              )}
-            >
-              <span
-                className={cn(
-                  /* anchored at the left end: with no `left` the browser set
-                     the lever at its static place, 22px in, and it showed
-                     "on" while the switch was off */
-                  "absolute left-0 top-0.5 h-5 w-5 rounded-full transition-transform duration-[180ms]",
-                  options.assist ? "translate-x-[22px]" : "translate-x-0.5",
-                )}
-                style={
-                  readOnly
-                    ? { background: "rgb(var(--state-off-ink))", boxShadow: "none" }
-                    : {
-                        /* the lever is cut from the register's own plate, lit
-                           at the crown and shaded at the foot, so the bevel
-                           survives the change of register */
-                        background:
-                          "linear-gradient(180deg, rgba(255,255,255,.30) 0%, rgba(255,255,255,0) 48%, rgba(0,0,0,.28) 100%), rgb(var(--brass-plate))",
-                        boxShadow: "0 1px 3px rgba(0,0,0,.5)",
-                      }
-                }
-              />
-            </span>
-            <span
-              className={cn(
-                "font-ui text-[11px] font-semibold uppercase tracking-[0.12em] transition-colors",
-                !readOnly && options.assist ? "text-brass-300" : "text-iron-400",
-              )}
-            >
-              {options.assist ? t("setup.houseRules.assist.on") : t("setup.houseRules.assist.off")}
-            </span>
-          </button>
-        </RuleRow>
-
+        {/* the beginner's assistance is each player's own, in the board's
+            settings — never a rule laid on the whole table */}
         {/* Rules fidelity — read-only info row, not a control */}
         <motion.div
           initial={{ opacity: 0, y: 12 }}

@@ -566,9 +566,7 @@ export default function Lobby() {
 
   const optionChips = [
     table.options.eraLength === 'short' ? t('setup.houseRules.eraLength.canalOnly') : t('setup.houseRules.eraLength.full'),
-    t(`setup.houseRules.marketTemper.${table.options.marketTemper}`),
     table.options.timerMinutes === null ? t('setup.houseRules.timer.off') : t('setup.houseRules.timer.min', { n: table.options.timerMinutes }),
-    ...(table.options.assist ? [t('setup.houseRules.assist.on')] : []),
   ];
 
   return (

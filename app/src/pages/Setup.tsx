@@ -78,7 +78,9 @@ export default function Setup() {
     return urlMode === "solo" ? kept.map((s, i) => (i > 0 && s.type === "human" ? openSeat(s, "bot", kept) : s)) : kept;
   });
   const [options, setOptions] = useState<SetupOptions>(() => {
-    return loadStoredSetup()?.options ?? DEFAULT_OPTIONS;
+    /* the market's temper and the assistance are no longer the sheet's:
+       the one standard, the other each player's own */
+    return { ...(loadStoredSetup()?.options ?? DEFAULT_OPTIONS), marketTemper: "standard", assist: false };
   });
   /* the table draws its name from the club register, like every table */
   const [tableName] = useState(() => pickTableName([]));
@@ -212,13 +214,9 @@ export default function Setup() {
         ? t("setup.houseRules.eraLength.canalOnly")
         : t("setup.houseRules.eraLength.full"),
     ];
-    if (options.marketTemper !== "standard") {
-      chips.push(t(`setup.houseRules.marketTemper.${options.marketTemper}`));
-    }
     if (options.timerMinutes !== null) {
       chips.push(t("setup.houseRules.timer.min", { n: options.timerMinutes }));
     }
-    if (options.assist) chips.push(t("setup.houseRules.assist.label"));
     return chips;
   }, [options, t]);
 
