@@ -34,14 +34,16 @@ export interface TablePreviewProps {
   title: string;
   /** a line under it */
   blurb?: string;
+  /** a word for whom the look is meant, when it is not everyone's */
+  tag?: string;
   onClose: () => void;
 }
 
 /** the table, its sounds heard, until the window shuts: the thing is put
  *  on by the page before this is mounted (the board reads it at boot) and
  *  taken off here */
-function Table({ cards }: { cards: boolean }) {
-  const game = useMemo(() => showroom(), []);
+function Table({ cards, tiles }: { cards: boolean; tiles: boolean }) {
+  const game = useMemo(() => showroom(tiles), [tiles]);
   useEffect(() => {
     const o = getBoardOptions();
     setMix({ on: o.sound, ambience: true, music: true, voices: false, levels: { ambience: o.volAmbience, gestures: o.volGestures, moments: o.volMoments, music: o.volMusic } });
@@ -72,7 +74,7 @@ function Table({ cards }: { cards: boolean }) {
   );
 }
 
-export default function TablePreview({ wear, title, blurb, onClose }: TablePreviewProps) {
+export default function TablePreview({ wear, title, blurb, tag, onClose }: TablePreviewProps) {
   const t = useT();
   const open = wear !== null;
   useEffect(() => {
@@ -106,7 +108,10 @@ export default function TablePreview({ wear, title, blurb, onClose }: TablePrevi
           >
             <div className="mb-3 flex items-start justify-between gap-3">
               <div className="min-w-0">
-                <h2 className="title-card">{title}</h2>
+                <h2 className="title-card flex flex-wrap items-baseline gap-x-3 gap-y-1">
+                  {title}
+                  {tag && <span className="micro-label border-y border-[var(--gz-ink-soft)] px-2 text-brass-300">{tag}</span>}
+                </h2>
                 {blurb && <p className="mt-1 font-ui text-[12.5px] leading-snug text-paper-300">{blurb}</p>}
               </div>
               <div className="flex shrink-0 items-center gap-3">
@@ -117,7 +122,7 @@ export default function TablePreview({ wear, title, blurb, onClose }: TablePrevi
             <div className="relative min-h-0 flex-1 select-none overflow-hidden bg-coal-950">
               <div aria-hidden className="tex-wood pointer-events-none absolute inset-0 opacity-35" />
               <div className="absolute inset-0">
-                <Table cards={wear.cards !== undefined} />
+                <Table cards={wear.cards !== undefined} tiles={wear.tiles !== undefined} />
               </div>
             </div>
           </motion.div>

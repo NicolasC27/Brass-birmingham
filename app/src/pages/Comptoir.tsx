@@ -72,12 +72,17 @@ function boardWear(item: ShopItem): BoardWear | null {
   return null;
 }
 
+/** the looks meant for seasoned players: fewer marks on the board, the
+ *  game to be known a little better already */
+const EXPERT: ReadonlySet<string> = new Set(['ground-frost']);
+
 /** what the counter's window puts on the table for an item, when it has
  *  something to show: the paid-for looks (the free ones are the table's own) */
 function tryOf(item: ShopItem): Omit<TryOn, 'until'> | null {
   if (item.id === 'ground-frost') return { ground: 'city' };
-  if (item.id === 'tiles-frost') return { tiles: 'frost' };
-  if (item.id === 'cards-frost') return { cards: 'frost' };
+  /* the winter sets are seen on the ground they were made for */
+  if (item.id === 'tiles-frost') return { tiles: 'frost', ground: 'city' };
+  if (item.id === 'cards-frost') return { cards: 'frost', ground: 'city' };
   return null;
 }
 
@@ -180,6 +185,7 @@ function ShopItemCard({
       <div className="text-center">
         <h3 className="title-card">{name}</h3>
         <p className={cn('micro-label mt-1.5 inline-block', RARITY_STYLE[item.rarity])}>{t(`platform.comptoir.rarity.${item.rarity}`)}</p>
+        {EXPERT.has(item.id) && <p className="micro-label mt-1.5 text-brass-300">{t('platform.comptoir.expert')}</p>}
         <p className="mt-2 font-ui text-[12.5px] leading-relaxed text-paper-300">{t(`platform.comptoir.blurbs.${item.id}`)}</p>
       </div>
 
@@ -368,7 +374,7 @@ export default function Comptoir() {
       </div>
 
       {/* the table in its window, wearing the item looked at */}
-      <TablePreview wear={trying ? tryOf(trying) : null} title={trying ? itemName(trying.id) : ''} blurb={trying ? t(`platform.comptoir.blurbs.${trying.id}`) : undefined} onClose={() => setTrying(null)} />
+      <TablePreview wear={trying ? tryOf(trying) : null} title={trying ? itemName(trying.id) : ''} blurb={trying ? t(`platform.comptoir.blurbs.${trying.id}`) : undefined} tag={trying && EXPERT.has(trying.id) ? t('platform.comptoir.expert') : undefined} onClose={() => setTrying(null)} />
 
       {/* confirmation d'achat : solde avant / après */}
       <Modal open={buying !== null} onClose={() => !busy && setBuying(null)} title={buying ? t('platform.comptoir.buyTitle', { name: t(`platform.comptoir.items.${buying.id}`) }) : undefined}>

@@ -813,6 +813,7 @@ const platform: typeof enPlatform = {
     try: 'Auf dem Tisch sehen',
     tryNote: 'Öffnet den Tisch im Großen, mit dem Gegenstand, seiner Stimmung und seiner Musik — ohne Kauf.',
     tryHint: 'Esc zum Schließen',
+    expert: 'Für erfahrene Spieler',
     tabs: {
       tiles: 'Plättchen',
       ground: 'Gelände',
@@ -858,7 +859,7 @@ const platform: typeof enPlatform = {
       'tiles-engraved': 'Die leeren Felder als Gravur, wie auf der Schachtel.',
       'tiles-mono': 'Die leeren Felder in Schwarz-Weiß, um die Karte auf einen Blick zu lesen.',
       'ground-midlands': 'Die Midlands in bemaltem Gips unter streifendem Licht, das Brett für alle.',
-      'ground-frost': 'Die Midlands unter dem Eis: unter jeder Stadt eine Siedlung ihres Gewerbes, der Wind, der Schnee und die Öfen. Ein Gelände, keine Regel.',
+      'ground-frost': 'Die Midlands unter dem Eis: unter jeder Stadt eine Siedlung ihres Gewerbes, der Wind, der Schnee und die Öfen. Ein Gelände, keine Regel — und weniger Marken auf dem Brett: das Spiel sollte schon ein wenig bekannt sein.',
       'tiles-frost': 'Die gemalten Motive unter einem Hauch Schnee, das Licht einen Ton kälter, ein Fenster erleuchtet.',
       'cards-plain': 'Die Städte der Hand gestochen wie auf der Schachtel.',
       'cards-frost': 'Dieselben Platten unter Schnee: weiße Dächer, gefrorene Kanäle, die Boote im Eis.',

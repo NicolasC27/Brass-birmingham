@@ -811,6 +811,7 @@ const platform = {
     try: 'Verlo en la mesa',
     tryNote: 'Abre la mesa a lo grande, con el objeto puesto, su ambiente y su música — sin comprar nada.',
     tryHint: 'Esc para cerrar',
+    expert: 'Para jugadores experimentados',
     tabs: {
       tiles: 'Losetas',
       ground: 'Terrenos',
@@ -856,7 +857,7 @@ const platform = {
       'tiles-engraved': 'Las casillas vacías en grabado, como en la caja.',
       'tiles-mono': 'Las casillas vacías en blanco y negro, para leer el mapa de un vistazo.',
       'ground-midlands': 'Los Midlands en yeso pintado bajo una luz rasante, el tablero de todos.',
-      'ground-frost': 'Los Midlands bajo el hielo: bajo cada ciudad un asentamiento de su oficio, el viento, la nieve y los hornos. Un terreno, no una regla.',
+      'ground-frost': 'Los Midlands bajo el hielo: bajo cada ciudad un asentamiento de su oficio, el viento, la nieve y los hornos. Un terreno, no una regla — y menos marcas en el tablero: conviene conocer ya un poco el juego.',
       'tiles-frost': 'Los motivos pintados bajo una capa de nieve, la luz un punto más fría, una ventana encendida.',
       'cards-plain': 'Las ciudades de la mano grabadas como en la caja.',
       'cards-frost': 'Las mismas planchas bajo la nieve: tejados blancos, canales helados, las barcas presas en el hielo.',

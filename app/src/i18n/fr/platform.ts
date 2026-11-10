@@ -811,6 +811,7 @@ const platform = {
     try: 'Voir sur la table',
     tryNote: 'Ouvre la table en grand, l’objet porté, avec son ambiance et sa musique — rien n’est acheté.',
     tryHint: 'Échap pour refermer',
+    expert: 'Pour joueurs expérimentés',
     tabs: {
       tiles: 'Tuiles',
       ground: 'Terrains',
@@ -856,7 +857,7 @@ const platform = {
       'tiles-engraved': 'Les cases vides en gravure, comme sur la boîte.',
       'tiles-mono': 'Les cases vides en noir et blanc, pour lire la carte d’un coup d’œil.',
       'ground-midlands': 'Les Midlands en plâtre peint sous une lumière rasante, le plateau de tout le monde.',
-      'ground-frost': 'Les Midlands sous la glace : une cité par métier, le vent, la neige et les fourneaux. Un terrain, pas une règle.',
+      'ground-frost': 'Les Midlands sous la glace : une cité par métier, le vent, la neige et les fourneaux. Un terrain, pas une règle — et moins de repères sur le plateau : il faut déjà connaître un peu le jeu.',
       'tiles-frost': 'Les sujets peints sous une poudrée de neige, la lumière un peu plus froide, une fenêtre allumée.',
       'cards-plain': 'Les villes de la main gravées comme sur la boîte.',
       'cards-frost': 'Les mêmes planches sous la neige : les toits blancs, les canaux gelés, les barques prises dans la glace.',
