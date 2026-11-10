@@ -270,6 +270,7 @@ const platform: typeof enPlatform = {
     readyTag: 'Bereit',
     waiting: 'Wartet…',
     codeLabel: "Zugnummer",
+    tabs: { convoy: 'Zug' },
     copy: "Nummer kopieren",
     shareHint: "Geben Sie sie Ihren Freunden: sie bringt sie an Bord.",
     inviteTitle: "Freunde einsteigen lassen",

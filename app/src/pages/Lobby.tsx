@@ -15,6 +15,7 @@ import { invite, portraitUrl, useDesk, useStranger } from '@/online/session';
 import type { Table, TableSeat } from '@/online/lobby';
 import Button from '@/components/platform/Button';
 import SeatToken from '@/components/platform/SeatToken';
+import Tabs, { TabPanel } from '@/components/platform/Tabs';
 import Toast from '@/components/platform/Toast';
 import type { ToastData } from '@/components/platform/Toast';
 import { useLang, useT } from '@/i18n';
@@ -442,6 +443,8 @@ export default function Lobby() {
 
   const [toast, setToast] = useState<ToastData | null>(null);
   const [openSeat, setOpenSeat] = useState<string | null>(null);
+  /** the console's leaf: the convoy, or the house rules */
+  const [leaf, setLeaf] = useState<'convoy' | 'rules'>('convoy');
   const [countdown, setCountdown] = useState<number | null>(null);
 
   /* the table has been rung: everyone at it sits down to the game */
@@ -570,9 +573,9 @@ export default function Lobby() {
 
   return (
     <div className="relative min-h-[calc(100vh-88px)]">
-      <div className="mx-auto max-w-[1240px] px-6 pb-24 pt-8 lg:px-8">
+      <div className="mx-auto max-w-[1240px] px-6 pb-10 pt-6 lg:px-8">
         {/* -------------------- En-tête du salon (§S1) -------------------- */}
-        <header className="mb-8 flex flex-wrap items-start justify-between gap-4">
+        <header className="mb-5 flex flex-wrap items-start justify-between gap-4">
           <div className="min-w-0">
             <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.22, ease: 'easeOut' }}>
               <Link to={isOnline ? '/desk' : '/online'} className="mb-3 inline-flex items-center gap-1.5 font-ui text-[12.5px] font-semibold uppercase tracking-[0.12em] text-iron-400 transition-colors hover:text-brass-300">
@@ -620,9 +623,9 @@ export default function Lobby() {
         <div className="grid items-start gap-8 min-[1100px]:grid-cols-12 min-[1100px]:gap-10">
           {/* ---------------------- La table (§S2) ----------------------- */}
           <motion.section
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.26, ease: 'easeOut' }}
+            initial={{ opacity: 0, x: -28 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.3, ease: 'easeOut' }}
             className="console p-6 min-[1100px]:col-span-8 lg:p-8"
             aria-label={t('online.room.seats')}
           >
@@ -671,37 +674,60 @@ export default function Lobby() {
           </motion.section>
 
           {/* ------------------- Console latérale (§S3) ------------------- */}
+          {/* one console, two leaves — the convoy (its number, the friends
+              to bring up) and the house rules — and the actions under both,
+              so the whole salon holds on one screen */}
           <motion.aside
-            initial={{ opacity: 0, x: 16 }}
+            initial={{ opacity: 0, x: 28 }}
             animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.26, ease: 'easeOut', delay: 0.05 }}
+            transition={{ duration: 0.3, ease: 'easeOut', delay: 0.08 }}
             className="min-[1100px]:col-span-4"
           >
-            <div className="flex flex-col gap-6 min-[1100px]:sticky min-[1100px]:top-[88px]">
+            <div className="min-[1100px]:sticky min-[1100px]:top-[88px]">
               <div className="console p-5">
-                {/* 3a — code de salle */}
-                <section className="max-[1099px]:hidden">
-                  <p className="micro-label text-brass-300">{t('platform.lobby.codeLabel')}</p>
-                  <div className="mt-2.5 flex h-14 items-center justify-center rounded-lg border border-brass-hairline bg-lacquer-950">
-                    <span className="room-code text-paper-100">{table.code}</span>
-                  </div>
-                  <Button variant="ghost" className="mt-2.5 !h-9 w-full !text-[13px]" onClick={copy} icon={<Copy size={14} aria-hidden />}>
-                    {t('platform.lobby.copy')}
-                  </Button>
-                  <p className="mt-2 font-ui text-[12.5px] text-iron-400">{t('platform.lobby.shareHint')}</p>
-                </section>
-
-                {/* 3b — invitations */}
-                {inviting && (
-                  <div className="border-enamel-line min-[1100px]:mt-5 min-[1100px]:border-t min-[1100px]:pt-5">
-                    <InvitePanel code={code} seated={table.seats.map((s) => s.id)} />
-                  </div>
-                )}
+                <Tabs
+                  groupId="lobby-console"
+                  ariaLabel={t('platform.lobby.eyebrow')}
+                  active={leaf}
+                  onChange={(id) => setLeaf(id as 'convoy' | 'rules')}
+                  tabs={[
+                    { id: 'convoy', label: t('platform.lobby.tabs.convoy') },
+                    { id: 'rules', label: t('setup.houseRules.heading') },
+                  ]}
+                />
+                <TabPanel groupId="lobby-console" id="convoy" className={cn('mt-4', leaf !== 'convoy' && 'hidden')}>
+                  {/* 3a — code de salle */}
+                  <section className="max-[1099px]:hidden">
+                    <p className="micro-label text-brass-300">{t('platform.lobby.codeLabel')}</p>
+                    <div className="mt-2 flex h-12 items-center justify-center rounded-lg border border-brass-hairline bg-lacquer-950">
+                      <span className="room-code text-paper-100">{table.code}</span>
+                    </div>
+                    <div className="mt-2 flex items-center gap-3">
+                      <Button variant="ghost" className="!h-9 shrink-0 !px-3 !text-[12.5px]" onClick={copy} icon={<Copy size={14} aria-hidden />}>
+                        {t('platform.lobby.copy')}
+                      </Button>
+                      <p className="min-w-0 font-ui text-[12px] leading-snug text-iron-400">{t('platform.lobby.shareHint')}</p>
+                    </div>
+                  </section>
+                  {/* 3b — invitations */}
+                  {inviting && (
+                    <div className="border-enamel-line min-[1100px]:mt-4 min-[1100px]:border-t min-[1100px]:pt-4">
+                      <InvitePanel code={code} seated={table.seats.map((s) => s.id)} />
+                    </div>
+                  )}
+                </TabPanel>
+                <TabPanel groupId="lobby-console" id="rules" className={cn('mt-2', leaf !== 'rules' && 'hidden')}>
+                  <HouseRules
+                    compact
+                    bare
+                    options={table.options}
+                    readOnly={!iAmHost}
+                    onChange={(patch) => iAmHost && edit((tb) => ({ ...tb, options: { ...tb.options, ...patch } }))}
+                  />
+                </TabPanel>
 
                 {/* 3c — actions */}
-                {/* in one column the code rides at the head of the page: with no
-                    letters to write either, the actions open the panel unruled */}
-                <div className={cn('mt-5 border-t border-enamel-line pt-5', !inviting && 'max-[1099px]:mt-0 max-[1099px]:border-t-0 max-[1099px]:pt-0')}>
+                <div className="mt-5 border-t border-enamel-line pt-5">
                   {!mySeat && (
                     <div className="flex flex-col gap-2.5">
                       <p className="font-ui text-[13px] text-paper-300">{table.seats.length >= MAX_SEATS ? t('online.entry.join.error.full') : t('online.room.notSeated')}</p>
@@ -766,19 +792,6 @@ export default function Lobby() {
                     </div>
                   )}
                 </div>
-              </div>
-
-              {/* les règles de la maison : la plume de l'hôte, les yeux de tous.
-                  At a guest's seat the panel is put out rather than glazed over:
-                  a pane that took the hand but not the tab left ten commands and
-                  a lever answering to the eye and doing nothing, and the reason
-                  printed on it was hidden from the readers who needed it most. */}
-              <div>
-                <HouseRules
-                  options={table.options}
-                  readOnly={!iAmHost}
-                  onChange={(patch) => iAmHost && edit((tb) => ({ ...tb, options: { ...tb.options, ...patch } }))}
-                />
               </div>
             </div>
           </motion.aside>

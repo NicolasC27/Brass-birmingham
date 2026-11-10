@@ -268,6 +268,7 @@ const platform = {
     readyTag: 'Ready',
     waiting: 'Waiting…',
     codeLabel: "Train number",
+    tabs: { convoy: 'Convoy' },
     copy: "Copy the number",
     shareHint: "Give it to your friends: it puts them aboard.",
     inviteTitle: "Bring friends aboard",

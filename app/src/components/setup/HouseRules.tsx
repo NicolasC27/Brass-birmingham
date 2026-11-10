@@ -59,6 +59,7 @@ export default function HouseRules({
   onChange,
   readOnly = false,
   compact = false,
+  bare = false,
 }: {
   options: SetupOptions;
   onChange: (patch: Partial<SetupOptions>) => void;
@@ -66,6 +67,8 @@ export default function HouseRules({
   readOnly?: boolean;
   /** the one-screen sheet: tighter rows, no entrance one by one */
   compact?: boolean;
+  /** under a leaf that already names it: no heading of its own */
+  bare?: boolean;
 }) {
   const t = useT();
   return (
@@ -74,8 +77,12 @@ export default function HouseRules({
       className="relative"
     >
       <header>
-        <h2 className="h2-section">{t("setup.houseRules.heading")}</h2>
-        <div aria-hidden className="gz-rule-double mt-2" />
+        {!bare && (
+          <>
+            <h2 className="h2-section">{t("setup.houseRules.heading")}</h2>
+            <div aria-hidden className="gz-rule-double mt-2" />
+          </>
+        )}
         {readOnly && (
           <p className="mt-2 font-ui text-[12px] leading-snug text-paper-300">{t("online.room.hostSets")}</p>
         )}
