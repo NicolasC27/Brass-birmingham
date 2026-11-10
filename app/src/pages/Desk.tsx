@@ -156,7 +156,6 @@ function MemberHeader() {
       }
     >
       <PlateLine>
-        {wallet.equipped.title !== 'title-none' && <span className="font-semibold text-brass-300">{t(`platform.comptoir.items.${wallet.equipped.title}`)} · </span>}
         {t('platform.desk.memberSince', { date: since })}
         {desk?.company && <span className="text-brass-300"> · {t('platform.companies.of', { name: desk.company.name })}</span>}
       </PlateLine>

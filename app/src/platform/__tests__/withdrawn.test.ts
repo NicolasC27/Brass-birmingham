@@ -28,9 +28,9 @@ describe('the withdrawn rail paintings', () => {
   });
 
   it('leave an outfit that still wears one as it was, the painting dropped', () => {
-    writePaper('equipped', { painting: 'painting-rail-3', sign: 'sign-oxford', tiles: 'painting-rail-1' });
+    writePaper('equipped', { painting: 'painting-rail-3', cards: 'cards-frost', tiles: 'painting-rail-1' });
     const { equipped } = getWallet();
-    expect(equipped).toEqual({ ...DEFAULT_EQUIPPED, sign: 'sign-oxford' });
+    expect(equipped).toEqual({ ...DEFAULT_EQUIPPED, cards: 'cards-frost' });
     expect(equipped).not.toHaveProperty('painting');
     expect(equip('painting-rail-2')).toBe(false);
   });

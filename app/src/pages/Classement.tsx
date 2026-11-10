@@ -13,7 +13,6 @@ import CompaniesPanel from '@/components/platform/CompaniesPanel';
 import PageShell from '@/components/site/PageShell';
 import type { LeaderRow } from '@/online/table';
 import { rankOf, type RankView } from '@/platform/rank';
-import { useWallet } from '@/platform/wallet';
 import { Sparkline } from '@/pages/Desk';
 import { localeOf, useLang, useT } from '@/i18n';
 import { cn } from '@/lib/utils';
@@ -38,7 +37,7 @@ const rankOfRow = (row: LeaderRow): RankView => rankOf({ rating: row.rating, tie
 
 /* ------------------------------ Une ligne ------------------------------ */
 
-function HonourRow({ row, mine, avatar }: { row: Ranked; mine: boolean; avatar: { avatar: string; frame: string } }) {
+function HonourRow({ row, mine }: { row: Ranked; mine: boolean }) {
   const t = useT();
   const lang = useLang();
   const rank = rankOfRow(row);
@@ -51,7 +50,7 @@ function HonourRow({ row, mine, avatar }: { row: Ranked; mine: boolean; avatar: 
       <td className="py-2.5 pr-3">
         <span className="flex items-center gap-2.5">
           {mine ? (
-            <MemberAvatar avatar={avatar.avatar} frame={avatar.frame} size={28} />
+            <MemberAvatar size={28} />
           ) : (
             <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-brass-hairline bg-enamel-700 font-ui text-[12.5px] font-semibold text-paper-100" aria-hidden>
               {row.name.charAt(0).toUpperCase()}
@@ -83,7 +82,7 @@ function HonourRow({ row, mine, avatar }: { row: Ranked; mine: boolean; avatar: 
 
 /* ------------------------------ Le tableau ------------------------------ */
 
-function HonourTable({ rows, pinned, me, avatar }: { rows: Ranked[]; pinned: Ranked | null; me: string; avatar: { avatar: string; frame: string } }) {
+function HonourTable({ rows, pinned, me }: { rows: Ranked[]; pinned: Ranked | null; me: string }) {
   const t = useT();
   const cols: { key: string; right?: boolean }[] = [{ key: 'rank' }, { key: 'player' }, { key: 'tier' }, { key: 'cote', right: true }, { key: 'trend' }, { key: 'games', right: true }, { key: 'won', right: true }];
   return (
@@ -100,7 +99,7 @@ function HonourTable({ rows, pinned, me, avatar }: { rows: Ranked[]; pinned: Ran
         </thead>
         <tbody>
           {rows.map((r) => (
-            <HonourRow key={r.id} row={r} mine={r.id === me} avatar={avatar} />
+            <HonourRow key={r.id} row={r} mine={r.id === me} />
           ))}
           {pinned && (
             <>
@@ -109,7 +108,7 @@ function HonourTable({ rows, pinned, me, avatar }: { rows: Ranked[]; pinned: Ran
                   …
                 </td>
               </tr>
-              <HonourRow row={pinned} mine avatar={avatar} />
+              <HonourRow row={pinned} mine />
             </>
           )}
         </tbody>
@@ -172,7 +171,6 @@ export default function Classement() {
   const stranger = useStranger();
   const desk = useDesk();
   const board = useLeaderboard();
-  const wallet = useWallet();
 
   useEffect(() => {
     if (!isOnline) navigate('/online', { replace: true });
@@ -183,7 +181,6 @@ export default function Classement() {
   const pinned = me && !rows.some((r) => r.id === me.id) ? me : null;
   const season = board?.season ?? desk?.season ?? null;
   const mine = rankOf(desk?.rating);
-  const avatar = { avatar: wallet.equipped.avatar, frame: wallet.equipped.frame };
 
   const facts = [
     board ? t('platform.ranking.players', { count: board.players }) : session ? t('platform.ranking.loading') : null,
@@ -235,7 +232,7 @@ export default function Classement() {
           ) : rows.length === 0 ? (
             <EmptyState plate="tables" title={t('platform.ranking.emptyTitle')} copy={t('platform.ranking.emptyCopy')} cta={{ label: t('platform.ranking.emptyCta'), to: '/online' }} />
           ) : (
-            <HonourTable rows={rows} pinned={pinned} me={session.id} avatar={avatar} />
+            <HonourTable rows={rows} pinned={pinned} me={session.id} />
           )}
         </motion.section>
         <Ladder mine={mine} />

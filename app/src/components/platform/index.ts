@@ -26,7 +26,7 @@ export type { ModalProps } from './Modal';
 export { default as Toast } from './Toast';
 export type { ToastData } from './Toast';
 export { default as PlatformShell } from './PlatformShell';
-export { default as MemberAvatar, FrameRing } from './MemberAvatar';
+export { default as MemberAvatar } from './MemberAvatar';
 export type { MemberAvatarProps } from './MemberAvatar';
 export { usePresence } from './presence';
 export type { PresenceSnapshot, QueueSnapshot } from './presence';

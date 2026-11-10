@@ -4,7 +4,6 @@ import { cn } from '@/lib/utils';
 import { LANGS, localeOf, setLang, useLang, useT } from '@/i18n';
 import { useDesk, useSession } from '@/online/session';
 import { rankOf } from '@/platform/rank';
-import { useWallet } from '@/platform/wallet';
 import { toggleTheme, useTheme } from '@/platform/theme';
 import Button from './Button';
 import RankBadge from './RankBadge';
@@ -67,7 +66,6 @@ function PlayerToken() {
   const t = useT();
   const session = useSession();
   const desk = useDesk();
-  const wallet = useWallet();
   /* the badge reads the office's cote: placements until the five are played */
   const rank = rankOf(desk?.rating);
 
@@ -83,7 +81,7 @@ function PlayerToken() {
       to="/profile"
       className="flex h-7 items-center gap-2 rounded-full border border-brass-hairline-strong bg-enamel-850 py-0.5 pl-0.5 pr-2.5 transition-colors duration-150 hover:border-brass-300"
     >
-      <img src={`/${wallet.equipped.avatar}.svg`} alt="" className="h-[22px] w-[22px] rounded-full" />
+      <img src="/avatar-iron.svg" alt="" className="h-[22px] w-[22px] rounded-full" />
       <span className="max-w-[110px] truncate font-ui text-[12px] font-medium text-paper-100">{session.name}</span>
       <RankBadge tier={rank.tier} division={rank.division} size={14} compact />
     </Link>

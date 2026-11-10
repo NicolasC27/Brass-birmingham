@@ -188,9 +188,9 @@ describe('the register', () => {
     expect(store.purse(id)).toEqual({ guineas: 500, owned: [...FREE_ITEMS, 'tiles-mono'] });
     /* no longer sold, so not sold again */
     expect(store.buy(id, 'painting-rail-1')).toBe('refused');
-    expect(store.buy(id, 'sign-oxford')).toBeNull();
-    expect(store.purse(id)).toEqual({ guineas: 380, owned: [...FREE_ITEMS, 'tiles-mono', 'sign-oxford'] });
+    expect(store.buy(id, 'cards-frost')).toBeNull();
+    expect(store.purse(id)).toEqual({ guineas: 410, owned: [...FREE_ITEMS, 'tiles-mono', 'cards-frost'] });
     /* the register still holds what it held */
-    expect(JSON.parse((store.exportOf(id)!.purse as { owned: string }).owned)).toEqual(['painting-rail-1', 'tiles-mono', 'painting-rail-3', 'sign-oxford']);
+    expect(JSON.parse((store.exportOf(id)!.purse as { owned: string }).owned)).toEqual(['painting-rail-1', 'tiles-mono', 'painting-rail-3', 'cards-frost']);
   });
 });

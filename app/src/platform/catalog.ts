@@ -3,7 +3,7 @@ import { COUNTER, FREE_ITEMS, type CounterKind } from '@/online/counter';
 /* ------------------------------------------------------------------ */
 /* Le Comptoir — catalogue cosmétique, dérivé de la liste partagée     */
 /* avec le bureau (online/counter.ts) : mêmes ids, mêmes prix des deux */
-/* côtés du fil. Aucun effet de jeu : signes de prestige uniquement.   */
+/* côtés du fil. Aucun effet de jeu : les habits de la table seulement. */
 /* Les noms affichés vivent dans i18n (platform.comptoir.items.{id}).  */
 /* ------------------------------------------------------------------ */
 
@@ -17,7 +17,7 @@ export interface ShopItem {
   rarity: Rarity;
 }
 
-export const CATEGORIES: Category[] = ['avatar', 'frame', 'title', 'sign', 'portrait', 'tiles', 'cards', 'ground'];
+export const CATEGORIES: Category[] = ['ground', 'tiles', 'cards'];
 
 /* ------------------------------------------------------------------ */
 /* Le comptoir est en veille : rien ne se vend encore. Les deux        */
@@ -29,26 +29,18 @@ export const CATEGORIES: Category[] = ['avatar', 'frame', 'title', 'sign', 'port
 export const COUNTER_OPEN: boolean = true;
 
 /** les rayons montrés tant que le comptoir est en veille */
-export const PREVIEW_CATEGORIES: Category[] = ['portrait', 'tiles', 'cards', 'ground'];
+export const PREVIEW_CATEGORIES: Category[] = ['ground', 'tiles', 'cards'];
 
 /** les rayons visibles, boutique ouverte ou non */
 export const SHOWN_CATEGORIES: Category[] = COUNTER_OPEN ? CATEGORIES : PREVIEW_CATEGORIES;
 
-/* les raretés annoncées à l'ouverture du comptoir, gardées telles quelles */
-const RARITY_OVERRIDE: Record<string, Rarity> = {
-  'frame-gear': 'rare',
-  'title-railmagnate': 'prestige',
-};
-
-function rarityFor(id: string, price: number): Rarity {
-  const fixed = RARITY_OVERRIDE[id];
-  if (fixed) return fixed;
+function rarityFor(price: number): Rarity {
   if (price >= 150) return 'prestige';
   if (price >= 60) return 'rare';
   return 'common';
 }
 
-export const CATALOG: ShopItem[] = COUNTER.map((i) => ({ id: i.id, category: i.kind, price: i.price, rarity: rarityFor(i.id, i.price) }));
+export const CATALOG: ShopItem[] = COUNTER.map((i) => ({ id: i.id, category: i.kind, price: i.price, rarity: rarityFor(i.price) }));
 
 export const ITEM_BY_ID: ReadonlyMap<string, ShopItem> = new Map(CATALOG.map((i) => [i.id, i]));
 
@@ -56,11 +48,6 @@ export const ITEM_BY_ID: ReadonlyMap<string, ShopItem> = new Map(CATALOG.map((i)
 export const DEFAULT_OWNED: string[] = FREE_ITEMS;
 
 export const DEFAULT_EQUIPPED: Record<Category, string> = {
-  avatar: 'avatar-iron',
-  frame: 'frame-none',
-  title: 'title-none',
-  sign: 'sign-shrewsbury',
-  portrait: 'portrait-1',
   tiles: 'tiles-engraved',
   ground: 'ground-midlands',
   cards: 'cards-plain',

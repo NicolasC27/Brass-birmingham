@@ -401,9 +401,9 @@ describe('the hall', () => {
     expect(ada.desk!.purse.owned).toEqual([...FREE_ITEMS, 'tiles-mono']);
     ada.send({ t: 'buy', rid: 3, item: 'tiles-mono' });
     await ada.until('the second refusal', () => ada.rejected.length === 2);
-    ada.send({ t: 'buy', rid: 4, item: 'sign-of-nowhere' });
+    ada.send({ t: 'buy', rid: 4, item: 'tiles-of-nowhere' });
     await ada.until('the third refusal', () => ada.rejected.length === 3);
-    ada.send({ t: 'buy', rid: 5, item: 'sign-oxford' });
+    ada.send({ t: 'buy', rid: 5, item: 'ground-frost' });
     await ada.until('the fourth refusal', () => ada.rejected.length === 4);
     expect(ada.rejected).toEqual(['refused', 'refused', 'refused', 'refused']);
     expect(server!.store.purse(ada.id)).toEqual({ guineas: 40, owned: [...FREE_ITEMS, 'tiles-mono'] });

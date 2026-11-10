@@ -45,7 +45,6 @@ function MemberCard() {
   const lang = useLang();
   const session = useSession();
   const desk = useDesk();
-  const wallet = useWallet();
   if (!session) return null;
   const since = memberSince(session.createdAt, lang);
   const rank = rankOf(desk?.rating);
@@ -82,7 +81,6 @@ function MemberCard() {
       }
     >
       <PlateLine>
-        {wallet.equipped.title !== 'title-none' && <span className="font-semibold text-brass-300">{t(`platform.comptoir.items.${wallet.equipped.title}`)} · </span>}
         {t('platform.profile.memberSince', { date: since })}
       </PlateLine>
       {session.motto && <p className="mt-2.5 font-ui text-[14px] text-paper-300">{`«\u00A0${session.motto}\u00A0»`}</p>}
