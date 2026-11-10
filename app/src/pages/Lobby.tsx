@@ -11,9 +11,10 @@ import { freePersona, personaName } from '@/game/data';
 import { EXPERT } from '@/game/search';
 import type { BotPersona, PlayerColor } from '@/components/setup/constants';
 import { MAX_SEATS, canStart, freeColor, isOnline, lobby, setupFromTable, useTable } from '@/online/lobby';
-import { invite, portraitUrl, useDesk, useStranger } from '@/online/session';
+import { invite, portraitUrl, updateProfile, useDesk, useSession, useStranger } from '@/online/session';
 import type { Table, TableSeat } from '@/online/lobby';
 import Button from '@/components/platform/Button';
+import HeadPicker from '@/components/platform/HeadPicker';
 import SeatToken from '@/components/platform/SeatToken';
 import Tabs, { TabPanel } from '@/components/platform/Tabs';
 import Toast from '@/components/platform/Toast';
@@ -136,6 +137,7 @@ function SeatSlot({
   onSit?: () => void;
 }) {
   const t = useT();
+  const me = useSession();
 
   /* the open chair: a dashed ring and one word under it. It offers a seat
      only to a reader who can take one — then it is a real button, and the
@@ -213,7 +215,7 @@ function SeatSlot({
         aria-haspopup={hasControls ? 'dialog' : undefined}
         className={cn('relative rounded-full', isMe && !ready && 'shadow-[0_0_0_3px_var(--brass-hairline-strong)]')}
       >
-        <SeatToken seat={{ name: slot.name || '…', color: slot.color, kind: slot.kind, ready, host: isHostSeat, you: isMe, portrait: bot ? null : portraitUrl(slot.id) }} size={64} index={index} />
+        <SeatToken seat={{ name: slot.name || '…', color: slot.color, kind: slot.kind, ready, host: isHostSeat, you: isMe, portrait: bot ? null : isMe ? me?.portrait ?? null : portraitUrl(slot.id) }} size={64} index={index} />
       </button>
       {/* la plaque : pseudo + sous-ligne d'état */}
       {/* the plate grows with a long sub-line; the name never yields its height */}
@@ -251,6 +253,12 @@ function SeatSlot({
                     />
                   );
                 })}
+              </div>
+            )}
+            {isMe && me && (
+              <div className={cn('flex flex-col items-center gap-1.5', canColor && 'mt-2.5')}>
+                <span className="micro-label text-iron-400">{t('platform.heads.title')}</span>
+                <HeadPicker value={me.portrait} onPick={(likeness) => void updateProfile({ portrait: likeness }).catch(() => undefined)} size={26} />
               </div>
             )}
             {bot && iAmHost && (

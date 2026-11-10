@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import { motion } from 'framer-motion';
 import MemberAvatar from '@/components/platform/MemberAvatar';
+import { useSession } from '@/online/session';
 import { cn } from '@/lib/utils';
 
 /* ------------------------------------------------------------------ */
@@ -42,12 +43,13 @@ export default function MemberPlate({
   aside?: ReactNode;
   className?: string;
 }) {
+  const likeness = useSession()?.portrait ?? null;
   return (
     <motion.section initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.24, ease }} className={cn('relative overflow-hidden console', className)}>
       <div aria-hidden className="tex-ledger pointer-events-none absolute inset-0 bg-repeat-y opacity-50" style={{ maskImage: SHEET_FADE, WebkitMaskImage: SHEET_FADE }} />
       <div className="relative flex flex-wrap items-center gap-x-8 gap-y-6 p-6 lg:p-8">
         <motion.div initial={{ scale: 0.85, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ duration: 0.26, ease }} className="relative shrink-0">
-          <MemberAvatar size={AVATAR} />
+          <MemberAvatar src={likeness} size={AVATAR} />
           {presence}
         </motion.div>
 

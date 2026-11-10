@@ -8,6 +8,7 @@ import Button from '@/components/platform/Button';
 import RankBadge, { type RankTier } from '@/components/platform/RankBadge';
 import StatTile from '@/components/platform/StatTile';
 import MemberPlate, { PlateLine } from '@/components/desk/MemberPlate';
+import HeadPicker from '@/components/platform/HeadPicker';
 import RankEmblem from '@/components/platform/RankEmblem';
 import PlayerToken from '@/components/setup/PlayerToken';
 import { PLAYER_COLORS } from '@/components/setup/constants';
@@ -474,6 +475,8 @@ function IdentitySettings() {
             <span className="flex h-16 w-16 items-center justify-center overflow-hidden rounded-full border-2 border-brass-hairline-strong bg-enamel-700 font-ui text-[24px] font-semibold text-paper-100">
               {portraitValue ? <img src={portraitValue} alt="" draggable={false} className="h-full w-full object-cover" /> : session.name.charAt(0).toUpperCase()}
             </span>
+            {/* the house's heads: one is worn like a picture of one's own */}
+            <HeadPicker value={portraitValue} onPick={setPortrait} size={44} />
             <label className="gz-ticket gz-ticket-sm cursor-pointer">
               {t('platform.profile.settings.portraitPick')}
               <input type="file" accept="image/*" className="sr-only" onChange={(e) => e.target.files?.[0] && pick(e.target.files[0])} />

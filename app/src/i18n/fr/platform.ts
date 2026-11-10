@@ -183,7 +183,7 @@ const platform = {
       seeAll: 'Tout voir',
       loading: 'Le registre arrive…',
       signIn: 'Signez le registre pour voir les départs.',
-      queue: {
+    queue: {
         signIn: 'Signez le registre pour entrer dans une file.',
         none: 'Vous n’êtes dans aucune file.',
         house: '{count} en attente dans la maison',
@@ -697,7 +697,7 @@ const platform = {
       mottoHint: 'Une ligne sous votre nom aux tables. Quatre-vingts caractères.',
       mottoPlaceholder: 'Les canaux avant les rails.',
       portrait: 'Votre portrait',
-      portraitHint: 'Une petite image carrée, montrée à votre siège aux tables. Elle reste au club.',
+      portraitHint: 'Une des têtes de la maison, ou une petite image carrée à vous, montrée à votre siège aux tables. Elle reste au club.',
       portraitPick: 'Choisir une image',
       portraitRemove: 'Retirer',
       color: 'Couleur favorite',
@@ -792,6 +792,13 @@ const platform = {
         studying: 'Le barème est à l’étude : ce que rapporte une rencontre, combien de membres une compagnie peut tenir, et comment une commande se remplit sans qu’on puisse y passer ses journées. C’est là-dessus que tout se joue — mieux vaut le régler avant l’ouverture qu’après.',
       },
     },
+  },
+  heads: {
+    title: 'Votre tête',
+    h1: 'Le fondeur',
+    h2: 'La filatrice',
+    h3: 'Le maître de forges',
+    h4: 'L’armateur',
   },
   comptoir: {
     nav: 'Comptoir',

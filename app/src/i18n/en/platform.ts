@@ -183,7 +183,7 @@ const platform = {
       seeAll: 'See all',
       loading: 'The register is on its way…',
       signIn: 'Sign the register to see the departures.',
-      queue: {
+    queue: {
         signIn: 'Sign the register to enter a queue.',
         none: 'You are in no queue.',
         house: '{count} waiting in the house',
@@ -697,7 +697,7 @@ const platform = {
       mottoHint: 'A line under your name at the tables. Eighty characters.',
       mottoPlaceholder: 'Canals before rails.',
       portrait: 'Your likeness',
-      portraitHint: 'A small square picture, shown at your seat at the tables. It stays at the club.',
+      portraitHint: 'One of the house’s heads, or a small square picture of your own, shown at your seat at the tables. It stays at the club.',
       portraitPick: 'Choose a picture',
       portraitRemove: 'Remove',
       color: 'Favourite colour',
@@ -792,6 +792,13 @@ const platform = {
         studying: 'The scale of it is under study: what a match pays, how many members a company may hold, and how an order is filled without anyone being able to spend the day at it. That is where the whole thing is decided — better settled before opening than after.',
       },
     },
+  },
+  heads: {
+    title: 'Your head',
+    h1: 'The founder',
+    h2: 'The spinner',
+    h3: 'The forgemaster',
+    h4: 'The shipowner',
   },
   comptoir: {
     nav: 'Counter',

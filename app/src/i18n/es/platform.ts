@@ -183,7 +183,7 @@ const platform = {
       seeAll: 'Ver todo',
       loading: 'El registro está en camino…',
       signIn: 'Firme el registro para ver las salidas.',
-      queue: {
+    queue: {
         signIn: 'Firme el registro para entrar en una cola.',
         none: 'No está en ninguna cola.',
         house: '{count} esperando en la casa',
@@ -697,7 +697,7 @@ const platform = {
       mottoHint: 'Una línea bajo su nombre en las mesas. Ochenta caracteres.',
       mottoPlaceholder: 'Los canales antes que los raíles.',
       portrait: 'Su retrato',
-      portraitHint: 'Una pequeña imagen cuadrada, mostrada en su asiento en las mesas. Se queda en el club.',
+      portraitHint: 'Una de las cabezas de la casa, o una pequeña imagen cuadrada suya, mostrada en su asiento en las mesas. Se queda en el club.',
       portraitPick: 'Elegir una imagen',
       portraitRemove: 'Quitar',
       color: 'Color favorito',
@@ -792,6 +792,13 @@ const platform = {
         studying: 'El baremo está en estudio: lo que paga un encuentro, cuántos miembros puede tener una compañía, y cómo se cumple un encargo sin que nadie pueda dedicarle el día entero. Ahí se juega todo — mejor resolverlo antes de abrir que después.',
       },
     },
+  },
+  heads: {
+    title: 'Su cabeza',
+    h1: 'El fundidor',
+    h2: 'La hilandera',
+    h3: 'El maestro de forja',
+    h4: 'El armador',
   },
   comptoir: {
     nav: 'Mostrador',

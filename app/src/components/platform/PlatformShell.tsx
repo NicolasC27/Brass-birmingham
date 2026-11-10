@@ -3,6 +3,7 @@ import { Link, NavLink, Outlet, useLocation } from 'react-router';
 import { cn } from '@/lib/utils';
 import { LANGS, localeOf, setLang, useLang, useT } from '@/i18n';
 import { useDesk, useSession } from '@/online/session';
+import MemberAvatar from './MemberAvatar';
 import { rankOf } from '@/platform/rank';
 import { toggleTheme, useTheme } from '@/platform/theme';
 import Button from './Button';
@@ -81,7 +82,7 @@ function PlayerToken() {
       to="/profile"
       className="flex h-7 items-center gap-2 rounded-full border border-brass-hairline-strong bg-enamel-850 py-0.5 pl-0.5 pr-2.5 transition-colors duration-150 hover:border-brass-300"
     >
-      <img src="/avatar-iron.svg" alt="" className="h-[22px] w-[22px] rounded-full" />
+      <MemberAvatar src={session.portrait} size={22} />
       <span className="max-w-[110px] truncate font-ui text-[12px] font-medium text-paper-100">{session.name}</span>
       <RankBadge tier={rank.tier} division={rank.division} size={14} compact />
     </Link>

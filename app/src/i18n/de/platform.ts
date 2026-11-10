@@ -185,7 +185,7 @@ const platform: typeof enPlatform = {
       seeAll: 'Alle anzeigen',
       loading: 'Das Register ist unterwegs…',
       signIn: 'Tragen Sie sich ins Register ein, um die Abfahrten zu sehen.',
-      queue: {
+    queue: {
         signIn: 'Tragen Sie sich ins Register ein, um in eine Warteschlange zu gehen.',
         none: 'Sie stehen in keiner Warteschlange.',
         house: '{count} [count|wartet|warten] im Haus',
@@ -699,7 +699,7 @@ const platform: typeof enPlatform = {
       mottoHint: 'Eine Zeile unter Ihrem Namen an den Tischen. Achtzig Zeichen.',
       mottoPlaceholder: 'Erst die Kanäle, dann die Schienen.',
       portrait: 'Ihr Bildnis',
-      portraitHint: 'Ein kleines quadratisches Bild, das an Ihrem Platz an den Tischen gezeigt wird. Es bleibt im Club.',
+      portraitHint: 'Einer der Köpfe des Hauses, oder ein kleines quadratisches Bild von Ihnen, an Ihrem Platz an den Tischen gezeigt. Es bleibt im Club.',
       portraitPick: 'Bild wählen',
       portraitRemove: 'Entfernen',
       color: 'Lieblingsfarbe',
@@ -794,6 +794,13 @@ const platform: typeof enPlatform = {
         studying: 'Der Maßstab wird noch geprüft: was eine Begegnung einbringt, wie viele Mitglieder eine Gesellschaft fassen darf, und wie ein Auftrag erfüllt wird, ohne dass jemand den ganzen Tag daran sitzen kann. Daran entscheidet sich alles — besser vor der Eröffnung geklärt als danach.',
       },
     },
+  },
+  heads: {
+    title: 'Ihr Kopf',
+    h1: 'Der Gießer',
+    h2: 'Die Spinnerin',
+    h3: 'Der Hüttenmeister',
+    h4: 'Der Reeder',
   },
   comptoir: {
     nav: 'Ladentisch',

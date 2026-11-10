@@ -4,9 +4,11 @@ import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { useT } from '@/i18n';
 import { isOnline } from '@/online/lobby';
-import { clearDealt, setQueue, useDealt, useDesk, useLine, useSession } from '@/online/session';
+import { clearDealt, setQueue, updateProfile, useDealt, useDesk, useLine, useSession } from '@/online/session';
 import { rankOf } from '@/platform/rank';
 import Button from '@/components/platform/Button';
+import HeadPicker from '@/components/platform/HeadPicker';
+import MemberAvatar from '@/components/platform/MemberAvatar';
 import Modal from '@/components/platform/Modal';
 import RankBadge from '@/components/platform/RankBadge';
 import type { TableMode } from '@/components/platform/ModeCard';
@@ -140,6 +142,15 @@ export default function Matchmaking({ onToast }: { onToast: Notify }) {
           <span className="data-text pb-1.5 text-iron-400 tnums">{t('platform.queue.playersWaiting', { count: snap.count })}</span>
         </div>
         <p className="mt-3 font-serif text-[13px] italic leading-snug text-paper-300">{reason ?? t(ranked ? 'platform.queue.rankedRule' : 'platform.queue.normalRule')}</p>
+        {/* the head worn at the table that is coming: one of the house's four,
+            picked while the train is made up and kept by the office */}
+        {active && queue && session && (
+          <div className="mt-3 flex flex-wrap items-center gap-2.5">
+            <MemberAvatar src={session.portrait} size={34} />
+            <span className="micro-label text-iron-400">{t('platform.heads.title')}</span>
+            <HeadPicker value={session.portrait} onPick={(likeness) => void updateProfile({ portrait: likeness }).catch(() => undefined)} size={28} />
+          </div>
+        )}
         {/* the bar sits at the foot of the notice: twin counters, twin tickets */}
         <div className="mt-auto flex items-center justify-between gap-3 pt-4">
           {active && queue ? (
