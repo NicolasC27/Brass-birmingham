@@ -376,8 +376,7 @@ interface AccountRow {
   motto: string;
   favoriteColor: string | null;
   head: number | null;
-  /** let into the alpha by the direction */
-  alpha: boolean;
+  alpha: number | null;
   acceptedAt: number | null;
   closedAt: number | null;
   newsletter: number | null;
@@ -1018,7 +1017,7 @@ export class Store {
   /** the direction's silence on a member, until when (0 lifts it) */
   /** the direction's register of members: every account not closed, newest first */
   members(): Member[] {
-    const rows = this.db.prepare(`select ${ACCOUNT_COLUMNS} from accounts where closedAt is null order by createdAt desc`).all() as AccountRow[];
+    const rows = this.db.prepare(`select ${ACCOUNT_COLUMNS} from accounts where closedAt is null order by createdAt desc`).all() as unknown as AccountRow[];
     return rows.map(accountOf).map((a) => ({ id: a.id, name: a.name, email: a.email, createdAt: a.createdAt, verified: a.verified, guest: a.guest, alpha: a.alpha }));
   }
 
