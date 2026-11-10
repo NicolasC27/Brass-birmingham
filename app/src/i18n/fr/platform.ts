@@ -288,6 +288,7 @@ const platform = {
     eyebrow: "Lettre de voiture n°7",
     title: "Affréter un convoi",
     tagline: 'Réglez la machine, invitez vos joueurs, lancez.',
+    kinds: { solo: 'Solo', hotseat: 'À plusieurs ici', club: 'Au club' },
     identity: {
       heading: 'Identité de la table',
       nameLabel: 'Nom de la table',

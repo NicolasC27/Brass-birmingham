@@ -288,6 +288,7 @@ const platform = {
     eyebrow: "CARTA DE PORTE N.º 7",
     title: "Fletar un convoy",
     tagline: 'Ajuste la máquina, invite a sus jugadores, arranque.',
+    kinds: { solo: 'Solo', hotseat: 'Varios aquí', club: 'En el club' },
     identity: {
       heading: 'Identidad de la mesa',
       nameLabel: 'Nombre de la mesa',

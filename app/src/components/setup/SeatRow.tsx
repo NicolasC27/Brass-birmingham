@@ -31,8 +31,11 @@ export default function SeatRow({
   onNameChange,
   onColorChange,
   onPersonaChange,
+  compact = false,
 }: {
   seat: Seat;
+  /** the one-screen sheet: tighter rows, the machine's word left to its tip */
+  compact?: boolean;
   index: number;
   isHead: boolean;
   canClose: boolean;
@@ -82,9 +85,9 @@ export default function SeatRow({
       /* every seat is cut to the columns of the list (Setup's grid): the
          token, the machine's medallion, the name, the choice — so the names
          start and their rules stop at the same place on every line */
-      className="col-span-full grid grid-cols-subgrid border-b border-[var(--gz-ink-faint)] py-3 last:border-b-0"
+      className={cn("col-span-full grid grid-cols-subgrid border-b border-[var(--gz-ink-faint)] last:border-b-0", compact ? "py-2" : "py-3")}
     >
-      <div className="col-span-full grid min-h-[52px] grid-cols-subgrid items-center">
+      <div className={cn("col-span-full grid grid-cols-subgrid items-center", compact ? "min-h-[40px]" : "min-h-[52px]")}>
         {/* Token — quarter-flip as its color/shape resolves */}
         <motion.div
           key={seat.color}
@@ -155,7 +158,7 @@ export default function SeatRow({
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.18 }}
-          className="col-span-full mt-2.5 flex flex-wrap items-center gap-x-4 gap-y-2"
+          className={cn("col-span-full flex flex-wrap items-center gap-x-4 gap-y-2", compact ? "mt-1.5" : "mt-2.5")}
         >
           {/* Color picker — choosing a color steals it from its holder */}
           <div className="flex items-center gap-1.5" role="radiogroup" aria-label={t("setup.seat.colorAria", { n: index + 1 })}>
@@ -206,7 +209,7 @@ export default function SeatRow({
                           src={`/portrait-${d.id}.webp`}
                           alt=""
                           draggable={false}
-                          className={cn("h-9 w-9 rounded-full object-cover transition-transform duration-150", active ? "scale-100" : "scale-90 saturate-[.7]")}
+                          className={cn("rounded-full object-cover transition-transform duration-150", compact ? "h-7 w-7" : "h-9 w-9", active ? "scale-100" : "scale-90 saturate-[.7]")}
                           style={{ boxShadow: active ? `0 0 0 2px ${hex}, 0 2px 6px rgba(0,0,0,.45)` : "0 1px 3px rgba(0,0,0,.35)" }}
                         />
                         <span className="font-ui text-[10.5px] font-semibold uppercase tracking-[0.12em]">{d.name}</span>
@@ -215,7 +218,7 @@ export default function SeatRow({
                   );
                 })}
               </div>
-              <p className="font-serif text-[12.5px] italic leading-snug text-paper-300">
+              {!compact && <p className="font-serif text-[12.5px] italic leading-snug text-paper-300">
                 {t(seat.persona === EXPERT ? "setup.persona.expert" : "setup.persona.adaptive")}
                 {/* the mark rides at the end of the sentence, never alone on a
                     line; iron, not rust — rust is kept for what stops the start */}
@@ -225,7 +228,7 @@ export default function SeatRow({
                     <Info className="h-3 w-3" />
                   </span>
                 </Tip>
-              </p>
+              </p>}
             </div>
           )}
         </motion.div>

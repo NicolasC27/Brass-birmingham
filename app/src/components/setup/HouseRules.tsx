@@ -15,23 +15,25 @@ function RuleRow({
   hint,
   children,
   index,
+  compact = false,
 }: {
   label: string;
   hint: string;
   children: React.ReactNode;
   index: number;
+  compact?: boolean;
 }) {
   return (
     <motion.div
-      initial={{ opacity: 0, y: 12 }}
+      initial={{ opacity: 0, y: compact ? 0 : 12 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: 0.15 + index * 0.06, duration: 0.35, ease: "easeOut" }}
+      transition={{ delay: compact ? 0 : 0.15 + index * 0.06, duration: compact ? 0.2 : 0.35, ease: "easeOut" }}
       /* two tracks, not a wrapping row: the command keeps to the right edge
          even when the pair no longer fits on one line, and the label wraps */
-      className="grid min-h-[56px] grid-cols-[1fr_auto] items-center gap-x-4 gap-y-2 border-b border-[var(--gz-ink-faint)] py-3 last:border-b-0"
+      className={cn("grid grid-cols-[1fr_auto] items-center gap-x-4 gap-y-2 border-b border-[var(--gz-ink-faint)] last:border-b-0", compact ? "min-h-[44px] py-2" : "min-h-[56px] py-3")}
     >
       <Tip label={hint} side="top">
-        <span className="cursor-help font-fraunces text-[15px] font-medium text-paper-100">
+        <span className={cn("cursor-help font-fraunces font-medium text-paper-100", compact ? "text-[14px]" : "text-[15px]")}>
           {label}
         </span>
       </Tip>
@@ -56,11 +58,14 @@ export default function HouseRules({
   options,
   onChange,
   readOnly = false,
+  compact = false,
 }: {
   options: SetupOptions;
   onChange: (patch: Partial<SetupOptions>) => void;
   /** the rules are the host's to set: show them, do not offer them */
   readOnly?: boolean;
+  /** the one-screen sheet: tighter rows, no entrance one by one */
+  compact?: boolean;
 }) {
   const t = useT();
   return (
@@ -79,6 +84,7 @@ export default function HouseRules({
       <div className="mt-1">
         {BOARD_IDS.length > 1 && (
           <RuleRow
+            compact={compact}
             index={0}
             label={t("setup.houseRules.map.label")}
             hint={t(`setup.houseRules.map.${options.map ?? DEFAULT_BOARD}Hint`)}
@@ -93,6 +99,7 @@ export default function HouseRules({
           </RuleRow>
         )}
         <RuleRow
+          compact={compact}
           index={0}
           label={t("setup.houseRules.eraLength.label")}
           hint={t("setup.houseRules.eraLength.hint")}
@@ -110,6 +117,7 @@ export default function HouseRules({
         </RuleRow>
 
         <RuleRow
+          compact={compact}
           index={1}
           label={t("setup.houseRules.marketTemper.label")}
           hint={t("setup.houseRules.marketTemper.hint")}
@@ -129,6 +137,7 @@ export default function HouseRules({
         </RuleRow>
 
         <RuleRow
+          compact={compact}
           index={2}
           label={t("setup.houseRules.timer.label")}
           hint={t("setup.houseRules.timer.hint")}
@@ -146,6 +155,7 @@ export default function HouseRules({
         </RuleRow>
 
         <RuleRow
+          compact={compact}
           index={3}
           label={t("setup.houseRules.assist.label")}
           hint={t("setup.houseRules.assist.hint")}
