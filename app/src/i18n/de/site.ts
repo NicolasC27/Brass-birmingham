@@ -138,6 +138,8 @@ const site: typeof enSite = {
     error: {
       'not-found': 'Kein Tisch trägt diesen Code.',
       full: 'Dieser Tisch ist voll.',
+      'too-many-games': 'Sechs laufende Partien im Büro sind die Grenze: spielen Sie eine zu Ende, oder vergessen Sie sie.',
+      'too-many-tables': 'Zwei offene Tische im Club sind die Grenze: schließen Sie einen, oder geben Sie die Abfahrt.',
       started: 'Diese Partie hat schon begonnen.',
       refused: 'Der Tisch wollte davon nichts wissen.',
       offline: 'Der Tischserver antwortet nicht.',

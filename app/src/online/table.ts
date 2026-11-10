@@ -46,7 +46,17 @@ export interface Table {
   updatedAt: number;
 }
 
-export type LobbyError = 'not-found' | 'full' | 'started' | 'refused' | 'offline' | 'verify-first' | 'no-such-player' | 'already-seated' | 'already-invited' | 'not-yours' | 'already-friends' | 'yourself';
+export type LobbyError = 'not-found' | 'full' | 'started' | 'refused' | 'offline' | 'verify-first' | 'no-such-player' | 'already-seated' | 'already-invited' | 'not-yours' | 'already-friends' | 'yourself' | 'too-many-tables';
+
+/* ------------------------------------------------------------------ */
+/* What one account may keep open at once, so the registers never      */
+/* overflow: a few games at home not yet played out, a couple of        */
+/* tables at the club waiting for players. The office refuses past      */
+/* these (too-many-games, too-many-tables); played-out games and         */
+/* tables in play do not count.                                          */
+/* ------------------------------------------------------------------ */
+export const HOME_OPEN_CAP = 6;
+export const CLUB_OPEN_CAP = 2;
 
 /** why the office would not sign you in */
 export type AuthError =

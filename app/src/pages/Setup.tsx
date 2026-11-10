@@ -3,6 +3,7 @@ import { Link, useNavigate, useSearchParams } from "react-router";
 import { motion } from "framer-motion";
 import { BookOpen, Bot, Globe, Play, Save, Users } from "lucide-react";
 import { openHomeGame } from "@/game/home";
+import { deskErrorKey, isKnownDeskError } from "@/online/errors";
 import type { SetupPayload } from "@/game/types";
 import { isOnline, lobby } from "@/online/lobby";
 import { useSession, useStranger } from "@/online/session";
@@ -132,8 +133,9 @@ export default function Setup() {
     try {
       const table = await lobby.create({ ...options }, seats[0].color);
       navigate(`/online/${table.code}`);
-    } catch {
-      setFault(t("platform.setup.where.failed"));
+    } catch (e) {
+      /* the office's own reason when it has one (too many tables open) */
+      setFault(t(isKnownDeskError(e) ? deskErrorKey(e) : "platform.setup.where.failed"));
       setOpening(false);
     }
   }, [opening, starting, session, navigate, options, seats, t]);
@@ -163,9 +165,14 @@ export default function Setup() {
       /* storage unavailable — the game page will fall back to defaults */
     }
     /* a new table every time: the one before stays on the register, to come
-       back to. The office deals the code */
-    void openHomeGame(undefined, payload as unknown as SetupPayload).then((table) => setStarting(table.code));
-  }, [where, openAtClub, canStart, starting, seats, options, tableName]);
+       back to. The office deals the code — or says why not (too many games
+       in hand, the office away) */
+    setFault(null);
+    openHomeGame(undefined, payload as unknown as SetupPayload).then(
+      (table) => setStarting(table.code),
+      (e: unknown) => setFault(t(deskErrorKey(e))),
+    );
+  }, [where, openAtClub, canStart, starting, seats, options, tableName, t]);
 
   // Live-persist the seating draft (v10 hot-seat): edited player names and
   // house rules survive a round-trip and prefill the next visit, without

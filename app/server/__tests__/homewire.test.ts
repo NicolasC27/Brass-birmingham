@@ -6,6 +6,7 @@ import { legalActions } from '@/game/search';
 import { ANALYSIS_VERSION } from '@/game/analysis';
 import type { GameState, SetupPayload } from '@/game/types';
 import type { ClientMessage } from '@/online/protocol';
+import { HOME_OPEN_CAP } from '@/online/table';
 import { serve } from '../index';
 import type { Serving } from '../index';
 import { Guest, OPTIONS, post } from './guest';
@@ -108,6 +109,24 @@ describe('a game at home', () => {
     expect(ada.save!.actions).toEqual(played);
     expect(ada.homeRefused).toHaveLength(2);
     expect(ada.save!.round).toBe(state.round);
+  });
+
+  it('keeps a few games in hand at once, and refuses the one past the ceiling', async () => {
+    await open();
+    const ada = await arrive('Ada');
+    await ada.asGuest();
+    for (let i = 0; i < HOME_OPEN_CAP; i++) {
+      ada.send({ t: 'home.open', rid: 100 + i, name: `Mill ${i}`, seed: SEED + i, setup: SETUP });
+      await ada.until(`deal ${i}`, () => ada.dealt?.name === `Mill ${i}`);
+    }
+    ada.send({ t: 'home.open', rid: 200, name: 'One too many', seed: SEED + 99, setup: SETUP });
+    await ada.until('the refusal', () => ada.frames.some((f) => f.t === 'refused' && f.rid === 200));
+    expect(ada.frames.find((f) => f.t === 'refused' && f.rid === 200)).toEqual({ t: 'refused', rid: 200, error: 'too-many-games' });
+    /* a game forgotten makes room for another */
+    ada.send({ t: 'home.forget', rid: 201, code: ada.dealt!.code });
+    await ada.until('the forgetting', () => ada.done.includes(201));
+    ada.send({ t: 'home.open', rid: 202, name: 'Room again', seed: SEED + 98, setup: SETUP });
+    await ada.until('the new deal', () => ada.dealt?.name === 'Room again');
   });
 
   it('answers a numbered move either way: written, or turned down', async () => {

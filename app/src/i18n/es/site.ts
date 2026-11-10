@@ -138,6 +138,8 @@ const site: typeof enSite = {
     error: {
       'not-found': 'Ninguna mesa tiene ese código.',
       full: 'Esta mesa está llena.',
+      'too-many-games': 'Seis partidas en curso en la oficina es el tope: termine una, u olvídela.',
+      'too-many-tables': 'Dos mesas abiertas en el club es el tope: cierre una, o dé la salida.',
       started: 'Esta partida ya ha empezado.',
       refused: 'La mesa no lo ha querido.',
       offline: 'El servidor de mesas no responde.',

@@ -140,6 +140,8 @@ const site: typeof enSite = {
       full: 'Cette table est pleine.',
       started: 'Cette partie a déjà commencé.',
       refused: 'La table n’en a pas voulu.',
+      'too-many-games': 'Six parties en cours au bureau, c’est le plafond : finissez-en une, ou oubliez-la.',
+      'too-many-tables': 'Deux tables ouvertes au club, c’est le plafond : fermez-en une, ou donnez le départ.',
       offline: 'Le serveur de tables ne répond pas.',
       'verify-first': 'Répondez d’abord à votre lettre : les tables s’ouvrent à une adresse vérifiée.',
       'no-such-player': 'Personne de ce nom dans le registre.',

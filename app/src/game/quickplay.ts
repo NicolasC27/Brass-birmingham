@@ -6,7 +6,7 @@ import { SETUP_STORAGE_KEY, loadStoredSetup } from '@/components/setup/constants
 import type { StoredSetup } from '@/components/setup/constants';
 import { personaName } from '@/game/data';
 import { tr } from '@/i18n';
-import { homeKnown, homeSnapshot, listHomeGames, openHomeGame, refreshHome } from './home';
+import { forgetHomeGame, homeKnown, homeSnapshot, listHomeGames, openHomeGame, refreshHome } from './home';
 import type { HomeTable } from './home';
 import type { SetupPayload } from './types';
 
@@ -135,10 +135,11 @@ export function guidedResume(tables: readonly HomeTable[] = listHomeGames(), cou
  *  still keeps is never dealt over — or, with none, or asked `again`, a
  *  new one */
 export async function openGuided(again = false, course: CourseId = 'short'): Promise<string> {
-  if (!again) {
-    const left = guidedResume(homeKnown() ? homeSnapshot() : await refreshHome(), course);
-    if (left) return left;
-  }
+  const left = guidedResume(homeKnown() ? homeSnapshot() : await refreshHome(), course);
+  if (left && !again) return left;
+  /* one guided table a course: dealt again, the one left unfinished is
+     forgotten, so the register never fills with lessons begun */
+  if (left) await forgetHomeGame(left);
   return course === 'full' ? startFullLesson() : startTutorial();
 }
 

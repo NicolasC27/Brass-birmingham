@@ -17,7 +17,7 @@ import { LINKS, MERCHANT_BY_ID, TOWN_BY_ID } from '@/game/data';
 import type { ClientMessage, ServerMessage } from '@/online/protocol';
 import type { JudgeId } from '@/game/analysis';
 import type { Me, TableQuery } from '@/online/table';
-import { normalizeCode } from '@/online/table';
+import { normalizeCode, HOME_OPEN_CAP } from '@/online/table';
 import { SAY_SHOWER, SAY_WINDOW_MS, cleanLine, friendRoom, hasLink, roomOf, tableRoom } from '@/online/parlour';
 import type { Room } from '@/online/parlour';
 import { CAPS } from '@/game/analysisMerge';
@@ -948,7 +948,9 @@ export function serve(options: ServeOptions = {}): Promise<Serving> {
           send(c, { t: 'refused', rid: m.rid, error: 'refused' });
           return;
         }
-        if (home.list(who.id).length >= HOME_CAP) {
+        /* a few games in hand at once, and a long register behind them */
+        const kept = home.list(who.id);
+        if (kept.filter((g) => !g.over).length >= HOME_OPEN_CAP || kept.length >= HOME_CAP) {
           send(c, { t: 'refused', rid: m.rid, error: 'too-many-games' });
           return;
         }

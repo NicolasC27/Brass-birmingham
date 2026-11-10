@@ -4,7 +4,7 @@ import { freePersona, personaName, personaOf } from '@/game/data';
 import { editionOf, withEdition } from '@/game/actions';
 import type { GameAction } from '@/game/actions';
 import type { GameState, SetupPayload } from '@/game/types';
-import { CODE_ALPHABET, MAX_SEATS, canStart, freeColor, setupFromTable } from '@/online/table';
+import { CLUB_OPEN_CAP, CODE_ALPHABET, MAX_SEATS, canStart, freeColor, setupFromTable } from '@/online/table';
 import type { Dispatch, Desk, HallCounts, Identity, Invitation, Leaderboard, LobbyError, PublicTable, QueueState, Sketch, Table, TableFilter, TableQuery, TableSeat, TableSummary, TablesPage, Tier } from '@/online/table';
 import { TABLE_FILTERS, normalizeQuery } from '@/online/table';
 import { DEFAULT_PACE, TableGame } from './game';
@@ -79,7 +79,7 @@ const FRESH_STRENGTH = 0.35;
 /** a table nobody has touched for this long is swept away */
 export const STALE_MS = 30 * 24 * 60 * 60 * 1000;
 /** how many tables one account may keep open, waiting on a bell */
-export const OPEN_TABLES = 8;
+export const OPEN_TABLES = CLUB_OPEN_CAP;
 
 /** a table code minted from the house's own dice, not the client's */
 const mintCode = (): string => Array.from({ length: 4 }, () => CODE_ALPHABET[randomInt(CODE_ALPHABET.length)]).join('');
@@ -486,7 +486,7 @@ export class Hall {
   create(me: Identity, options: SetupOptions, color?: PlayerColor): Table {
     let open = 0;
     for (const room of this.rooms.values()) if (room.table.hostId === me.id && !this.started(room)) open += 1;
-    if (open >= OPEN_TABLES) throw new Error('refused' satisfies LobbyError);
+    if (open >= OPEN_TABLES) throw new Error('too-many-tables' satisfies LobbyError);
     let code = mintCode();
     while (this.rooms.has(code)) code = mintCode();
     const now = Date.now();

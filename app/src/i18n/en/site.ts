@@ -136,6 +136,8 @@ const site = {
     error: {
       'not-found': 'No table carries this code.',
       full: 'This table is full.',
+      'too-many-games': 'Six games in hand at the desk is the ceiling: play one out, or forget it.',
+      'too-many-tables': 'Two tables open at the club is the ceiling: close one, or give the departure.',
       started: 'This game has already started.',
       refused: 'The table would not have that.',
       offline: 'The table server is not answering.',
