@@ -131,9 +131,7 @@ export default function TownInspector({
 }) {
   const t = useT();
   const pinned = useGame((s) => s.pins[town.id] !== undefined);
-  const note = useGame((s) => s.pins[town.id] ?? '');
   const pinTown = useGame((s) => s.pinTown);
-  const setPinNote = useGame((s) => s.setPinNote);
   /* on the spike while it is open: Escape closes the card and nothing else */
   const sheet = useLayer(true, onClose);
   const W = 264;
@@ -180,19 +178,9 @@ export default function TownInspector({
         <X className="h-3.5 w-3.5" />
       </button>
       <TownCardContent town={town} game={game} />
-      {/* a word from the reader on this town — writing one pins the town,
-          so the others' doings there are reported; the small pin alone
-          watches a town without a word */}
-      <div className="mt-2.5 flex items-start gap-2 border-t border-brass-700/40 pt-2">
-        <textarea
-          value={note}
-          onChange={(e) => setPinNote(town.id, e.target.value.slice(0, 140))}
-          placeholder={t('board.inspector.notePlaceholder')}
-          aria-label={t('board.inspector.note')}
-          rows={2}
-          className="paper min-w-0 flex-1 resize-none rounded-sm px-2 py-1 font-serif text-[12px] leading-snug text-ink-900 placeholder:text-ink-900/55"
-          onKeyDown={(e) => e.stopPropagation()}
-        />
+      {/* the small pin watches a town: the others' doings there are reported */}
+      <div className="mt-2.5 flex items-center justify-between gap-2 border-t border-brass-700/40 pt-2">
+        <span className="font-sans text-[11px] text-cream-100/60">{t(pinned ? 'board.inspector.unpinTip' : 'board.inspector.pinTip')}</span>
         <button
           type="button"
           onClick={() => pinTown(town.id, !pinned)}

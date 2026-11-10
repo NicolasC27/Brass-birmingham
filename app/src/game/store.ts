@@ -196,7 +196,6 @@ interface GameStore {
   setNotebook: (text: string) => void;
   /** pin a town (with an empty note) or drop the pin */
   pinTown: (town: string, on: boolean) => void;
-  setPinNote: (town: string, note: string) => void;
   /* ---- the toast once the game is over: seats that raised a glass ---- */
   toasts: number[];
   /** raise mine; at home the machines follow after a beat */
@@ -1148,12 +1147,6 @@ export const useGame = create<GameStore>((set, get) => ({
     const pins = { ...get().pins };
     if (on) pins[town] = pins[town] ?? '';
     else delete pins[town];
-    set({ pins });
-    keepNotes(pinScope(get()), pins, get().notebook);
-  },
-  setPinNote: (town, note) => {
-    /* a word on a town pins it; an emptied note leaves the pin standing */
-    const pins = { ...get().pins, [town]: note };
     set({ pins });
     keepNotes(pinScope(get()), pins, get().notebook);
   },
