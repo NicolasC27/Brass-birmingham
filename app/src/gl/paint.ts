@@ -118,6 +118,9 @@ export interface BoardScene {
   setHideUnbuilt: (hide: boolean) => void;
   /** the names off the table (board option, keyboard N) */
   setHideLabels: (hide: boolean) => void;
+  /** the names are hidden (N, or the counter's window): the photo mode
+   *  dressing the board again must not bring them back */
+  labelsHidden: () => boolean;
   /** larger income/VP chips on built tiles (board option) */
   setBigChips: (big: boolean) => void;
   /** grey out merchant bonuses not yet claimed (board option) */
@@ -1148,6 +1151,7 @@ export function buildBoardScene(bgCanal: Container, bgRail: Container, etchCanal
 
   /* ---------------------------- repaints ----------------------------- */
   let hideUnbuilt = false;
+  let labelsHidden = false;
   let bigChips = false;
   let greyFreeMerchants = false;
   let stockStyle: StockStyle = 'counter';
@@ -1849,8 +1853,10 @@ export function buildBoardScene(bgCanal: Container, bgRail: Container, etchCanal
       }
     },
     setHideLabels(hide) {
+      labelsHidden = hide;
       ribbonsLayer.visible = !hide;
     },
+    labelsHidden: () => labelsHidden,
     setVillages(style, ground) {
       villageStyle = style;
       groundShade = (ground && SHADE[ground]) || {};

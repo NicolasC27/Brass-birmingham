@@ -152,6 +152,9 @@ interface Props {
   focus?: { at: [number, number]; seq: number } | null;
   /** the orders for my turn shown in colour over a sepia table */
   preview?: ({ kind: 'orders'; queued: Prepared[]; actor: number } | { kind: 'player'; seat: number; transient?: boolean; at?: number }) & { empires?: number[] } | null;
+  /** what the page shows whatever the reader's own settings say: the
+   *  counter's window hides the names and the unbuilt routes */
+  look?: { hideLabels: boolean; hideUnbuilt: boolean } | null;
 }
 
 /** the moves a survey paints: the orders, numbered, or a seat's last move
@@ -473,7 +476,7 @@ function routeSpecks(pts: number[][]): Speck[] {
   return out;
 }
 
-export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsList, ghost, onInvalid, keyboard = true, focus = null, preview = null }: Props) {
+export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsList, ghost, onInvalid, keyboard = true, focus = null, preview = null, look = null }: Props) {
   /* the scene paints THIS game — the store's for the live table, a replayed
      state for the reviewer — read through a ref by the ticker */
   const gameRef = useRef(game);
@@ -496,7 +499,11 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
   /* board display options — shared store (also driven from the settings
      panel in Game.tsx); C hides unbuilt link traces, F fullscreen */
   const opts = useBoardOptions();
-  const { hideUnbuilt, hideLabels, bigChips, greyFreeMerchants: greyFreeMerch, stockStyle, traffic, tileArt, slotArt, colorBlind, sealTiles, sealLinks, cardGrain, chipStyle, sound } = opts;
+  const { bigChips, greyFreeMerchants: greyFreeMerch, stockStyle, traffic, tileArt, slotArt, colorBlind, sealTiles, sealLinks, cardGrain, chipStyle, sound } = opts;
+  const hideUnbuilt = look?.hideUnbuilt ?? opts.hideUnbuilt;
+  const hideLabels = look?.hideLabels ?? opts.hideLabels;
+  const lookRef = useRef(look);
+  lookRef.current = look;
   /* a hand set on the merchant's counter as the pointer arrives: one soft
      knock, nothing while it rests there — none when the sound is off */
   useEffect(() => {
@@ -889,7 +896,8 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
 
       const scene = buildBoardScene(bgCanal, bgRail, etchCanal, etchRail);
       sceneRef.current = scene;
-      scene.setHideUnbuilt(bootOpts.hideUnbuilt);
+      scene.setHideUnbuilt(lookRef.current?.hideUnbuilt ?? bootOpts.hideUnbuilt);
+      scene.setHideLabels(lookRef.current?.hideLabels ?? bootOpts.hideLabels);
       scene.setBigChips(bootOpts.bigChips);
       scene.setGreyFreeMerchants(bootOpts.greyFreeMerchants);
       scene.setStockStyle(bootOpts.stockStyle);
@@ -1454,7 +1462,7 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
           /* a built link is done with hovering; a route hidden with C is
              not there to be hovered either */
           const def = linkAt(wx, wy);
-          const shown = def && !gameRef.current?.links[def.id] && !getBoardOptions().hideUnbuilt;
+          const shown = def && !gameRef.current?.links[def.id] && !(lookRef.current?.hideUnbuilt ?? getBoardOptions().hideUnbuilt);
           hoverRef.current.setHoverLink(shown ? def.id : null);
           setCursor(shown ? 'help' : 'grab');
         }
@@ -2388,7 +2396,7 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
       {/* the settings gear lives in the bottom-right chip row (pages/Game.tsx);
           zoom lives on the wheel / + / − / 0 keys */}
 
-      {!preview && !reading && <Minimap view={view} container={size} onCenter={(wx, wy) => cameraRef.current?.centerOn(wx, wy)} era={game.era} game={game} frameRef={mmFrameRef} />}
+      {!preview && !reading && !look && <Minimap view={view} container={size} onCenter={(wx, wy) => cameraRef.current?.centerOn(wx, wy)} era={game.era} game={game} frameRef={mmFrameRef} />}
 
       {/* a slot that takes either of two industries, picked to build on: the
           two faces side by side, the one to be built ringed; the other is a

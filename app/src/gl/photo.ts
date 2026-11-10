@@ -516,7 +516,8 @@ function dress(me: Rigged): void {
   scene.hoverLayer.visible = !on;
   const labels = !on || now.labels;
   const ribbons = scene.ribbons[0]?.parent;
-  if (ribbons) ribbons.visible = labels;
+  /* names hidden by the reader (N) or the page stay hidden off the photograph */
+  if (ribbons) ribbons.visible = on ? now.labels : !scene.labelsHidden();
   for (const tv of scene.towns.values()) {
     for (const sl of tv.slots) {
       sl.badges.visible = labels;

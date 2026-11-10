@@ -109,6 +109,10 @@ export function tryOn(what: Omit<TryOn, 'until'>): void {
   const was = tryOnNow() ?? { until: 0 };
   session()?.setItem(TRY_KEY, JSON.stringify({ ...was, ...what, until: Date.now() + TRY_ON_MS }));
 }
+/** the counter's window is shut: the table wears its own again */
+export function tryOff(): void {
+  session()?.removeItem(TRY_KEY);
+}
 const trialGround = (): MapSet | undefined => {
   if (typeof location === 'undefined') return undefined;
   const asked = new URLSearchParams(location.search).get('ground');

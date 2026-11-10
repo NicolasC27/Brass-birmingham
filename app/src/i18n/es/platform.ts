@@ -809,7 +809,8 @@ const platform = {
     standbyNote: 'La tienda aún no abre. Los retratos y las baldosas siguen en el escaparate: se miran, no se venden. Las guineas, en cambio, siguen acumulándose.',
     openNote: 'El mostrador está abierto: las guineas ganadas en las mesas se gastan aquí. Cada objeto se ve en la mesa antes de comprarlo.',
     try: 'Verlo en la mesa',
-    tryNote: 'Abre una mesa de prueba que lleva el objeto diez minutos, sin comprarlo.',
+    tryNote: 'Abre la mesa a lo grande, con el objeto puesto, su ambiente y su música — sin comprar nada.',
+    tryHint: 'Esc para cerrar',
     tabs: {
       tiles: 'Losetas',
       ground: 'Terrenos',

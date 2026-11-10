@@ -1,10 +1,11 @@
 import { useState } from 'react';
-import { useNavigate, Link } from 'react-router';
+import { Link } from 'react-router';
 import { motion, useReducedMotion } from 'framer-motion';
 import { BadgeCheck, Check, Clock, Coins } from 'lucide-react';
 import Button from '@/components/platform/Button';
 import Modal from '@/components/platform/Modal';
 import Tabs, { TabPanel } from '@/components/platform/Tabs';
+import TablePreview from '@/components/comptoir/TablePreview';
 import PageShell from '@/components/site/PageShell';
 import Toast, { type ToastData } from '@/components/platform/Toast';
 import { setBoardOption, tryOn, useBoardOptions, type BoardOptions, type CardSet, type Ground, type TryOn } from '@/components/game/boardOptions';
@@ -71,7 +72,8 @@ function boardWear(item: ShopItem): BoardWear | null {
   return null;
 }
 
-/** what trying an item on puts on the table, when it can be tried */
+/** what the counter's window puts on the table for an item, when it has
+ *  something to show: the paid-for looks (the free ones are the table's own) */
 function tryOf(item: ShopItem): Omit<TryOn, 'until'> | null {
   if (item.id === 'ground-frost') return { ground: 'city' };
   if (item.id === 'tiles-frost') return { tiles: 'frost' };
@@ -272,9 +274,10 @@ export default function Comptoir() {
   const opts = useBoardOptions();
   const [tab, setTab] = useState<Category>(SHOWN_CATEGORIES[0]);
   const [buying, setBuying] = useState<ShopItem | null>(null);
+  /* the item seen on the table, in the window over the page */
+  const [trying, setTrying] = useState<ShopItem | null>(null);
   const [busy, setBusy] = useState(false);
   const [toast, setToast] = useState<ToastData | null>(null);
-  const navigate = useNavigate();
 
   const showToast = (message: string, kind: ToastData['kind'] = 'success') => setToast({ id: Date.now(), message, kind });
 
@@ -300,12 +303,13 @@ export default function Comptoir() {
     }
   };
 
-  /* a thing tried on: the tab wears it for a while, and a table is opened */
+  /* a thing seen on the table: put on first (the board reads it as it is
+     built), then the window opens over the page */
   const doTry = (item: ShopItem) => {
     const what = tryOf(item);
     if (!what) return;
     tryOn(what);
-    navigate('/game');
+    setTrying(item);
   };
 
   /* c'est le plateau qui porte l'objet équipé */
@@ -362,6 +366,9 @@ export default function Comptoir() {
           <Earnings />
         </div>
       </div>
+
+      {/* the table in its window, wearing the item looked at */}
+      <TablePreview wear={trying ? tryOf(trying) : null} title={trying ? itemName(trying.id) : ''} blurb={trying ? t(`platform.comptoir.blurbs.${trying.id}`) : undefined} onClose={() => setTrying(null)} />
 
       {/* confirmation d'achat : solde avant / après */}
       <Modal open={buying !== null} onClose={() => !busy && setBuying(null)} title={buying ? t('platform.comptoir.buyTitle', { name: t(`platform.comptoir.items.${buying.id}`) }) : undefined}>
