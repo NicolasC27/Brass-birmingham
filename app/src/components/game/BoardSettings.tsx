@@ -452,6 +452,9 @@ function BoardSettings() {
                     </OptionRow>
                     {opts.sound && (
                       <div className="mb-1 ml-3 border-l-2 border-brass-400/40 pl-3">
+                        <OptionRow label={t('game.settings.sounds.volMaster')} hint={t('game.settings.sounds.volMasterHint')}>
+                          <Level value={opts.volMaster} onChange={(v) => setBoardOption('volMaster', v)} label={t('game.settings.sounds.volMaster')} />
+                        </OptionRow>
                         <OptionRow label={t('game.settings.sounds.ambience')} hint={t('game.settings.sounds.ambienceHint')}>
                           <Switch on={opts.ambience} onClick={() => setBoardOption('ambience', !opts.ambience)} label={t('game.settings.sounds.ambience')} />
                         </OptionRow>

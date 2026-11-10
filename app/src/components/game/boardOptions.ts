@@ -223,6 +223,8 @@ export interface BoardOptions {
   matWide: boolean;
   /** the table's sounds, all of them: the master switch of the mixing desk */
   sound: boolean;
+  /** the master's level over every sound, 0 to 1 */
+  volMaster: number;
   /** the ambience of the era under the table (off by default for a reader
    *  who asked the system for less motion) */
   ambience: boolean;
@@ -276,6 +278,7 @@ const KEYS: Record<Exclude<keyof BoardOptions, 'settingsOpen'>, string> = {
   guideFolded: 'brassworks.guideFolded',
   matWide: 'brassworks.matWide',
   sound: 'brassworks.sound',
+  volMaster: 'brassworks.sound.volMaster',
   ambience: 'brassworks.sound.ambience',
   volAmbience: 'brassworks.sound.volAmbience',
   volGestures: 'brassworks.sound.volGestures',
@@ -312,7 +315,7 @@ function reducedMotion(): boolean {
   }
 }
 /** a stored level, between 0 and 1 */
-function level(k: 'volAmbience' | 'volGestures' | 'volMoments' | 'volMusic', fallback: number): number {
+function level(k: 'volMaster' | 'volAmbience' | 'volGestures' | 'volMoments' | 'volMusic', fallback: number): number {
   const v = Number(read(k, fallback));
   return Number.isFinite(v) ? Math.min(1, Math.max(0, v)) : fallback;
 }
@@ -351,13 +354,14 @@ let state: BoardOptions = {
   guideFolded: read('guideFolded', false),
   matWide: read('matWide', false),
   sound: read('sound', true),
+  volMaster: level('volMaster', 1),
   ambience: read('ambience', !reducedMotion()),
-  volAmbience: level('volAmbience', 0.5),
+  volAmbience: level('volAmbience', 0.05),
   volGestures: level('volGestures', 0.8),
   volMoments: level('volMoments', 0.8),
   music: read('music', true),
   /* low: the tune is heard under the ambience, not over the table */
-  volMusic: level('volMusic', 0.5),
+  volMusic: level('volMusic', 0.1),
   voices: read('voices', true),
   telegrams: read('telegrams', true),
   focus: read('focus', false),

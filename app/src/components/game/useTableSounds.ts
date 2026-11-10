@@ -129,11 +129,11 @@ const MOMENT_AFTER_MOVE_MS = 450;
  *  a cue for every change of the game worth hearing */
 export function useTableSounds(): void {
   const opts = useBoardOptions();
-  const { sound, ambience, music, voices, volAmbience, volGestures, volMoments, volMusic, settingsOpen } = opts;
+  const { sound, volMaster, ambience, music, voices, volAmbience, volGestures, volMoments, volMusic, settingsOpen } = opts;
 
   useEffect(() => {
-    setMix({ on: sound, ambience, music, voices, levels: { ambience: volAmbience, gestures: volGestures, moments: volMoments, music: volMusic } });
-  }, [sound, ambience, music, voices, volAmbience, volGestures, volMoments, volMusic]);
+    setMix({ on: sound, master: volMaster, ambience, music, voices, levels: { ambience: volAmbience, gestures: volGestures, moments: volMoments, music: volMusic } });
+  }, [sound, volMaster, ambience, music, voices, volAmbience, volGestures, volMoments, volMusic]);
 
   /* the era's ambience; gone at the end of the game and when the table is left */
   const era = useGame((s) => (s.game && s.game.phase !== 'game-over' ? s.game.era : null));

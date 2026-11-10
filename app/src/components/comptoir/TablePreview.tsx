@@ -46,7 +46,7 @@ function Table({ cards, tiles }: { cards: boolean; tiles: boolean }) {
   const game = useMemo(() => showroom(tiles), [tiles]);
   useEffect(() => {
     const o = getBoardOptions();
-    setMix({ on: o.sound, ambience: true, music: true, voices: false, levels: { ambience: o.volAmbience, gestures: o.volGestures, moments: o.volMoments, music: o.volMusic } });
+    setMix({ on: o.sound, master: o.volMaster, ambience: true, music: true, voices: false, levels: { ambience: o.volAmbience, gestures: o.volGestures, moments: o.volMoments, music: o.volMusic } });
     tableAmbience('canal', groundWeather());
     tableMusic('canal');
     /* the era's first tune without its usual wait: the window is opened to hear it */

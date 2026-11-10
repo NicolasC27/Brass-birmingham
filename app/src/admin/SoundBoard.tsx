@@ -58,7 +58,7 @@ export default function SoundBoard() {
   /* the board speaks with every switch open, at the levels the settings
      open on; the table sets its own mix again when it is sat at */
   useEffect(() => {
-    setMix({ on: true, ambience: true, music: true, voices: true, levels: { ambience: 0.5, gestures: 0.8, moments: 0.8, music: 0.5 } });
+    setMix({ on: true, master: 1, ambience: true, music: true, voices: true, levels: { ambience: 0.5, gestures: 0.8, moments: 0.8, music: 0.5 } });
     return () => {
       tableAmbience(null);
       tableMusic(null);

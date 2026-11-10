@@ -199,6 +199,8 @@ const fr: typeof engame = {
     /* the table's sounds: master switch, ambience, the three levels */
     sounds: {
       hint: 'Tous les sons de la table : les pièces posées, la cloche de votre tour, les maisons au survol.',
+      volMaster: 'Volume général',
+      volMasterHint: 'Sur tous les sons de la table à la fois.',
       ambience: 'Ambiance',
       ambienceHint: 'Le canal, puis le rail, très bas sous la table. Coupée si le système demande moins d’animations.',
       volAmbience: 'Niveau de l’ambiance',

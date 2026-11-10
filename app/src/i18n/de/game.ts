@@ -199,6 +199,8 @@ const game: typeof engame = {
     /* the table's sounds: master switch, ambience, the three levels */
     sounds: {
       hint: 'Alle Töne des Tisches: gelegte Plättchen, die Glocke deines Zuges, die Häuser unter dem Zeiger.',
+      volMaster: 'Gesamtlautstärke',
+      volMasterHint: 'Über alle Klänge des Tisches zugleich.',
       ambience: 'Klangkulisse',
       ambienceHint: 'Der Kanal, dann die Eisenbahn, ganz leise unter dem Tisch. Aus, wenn das System weniger Bewegung wünscht.',
       volAmbience: 'Pegel der Kulisse',

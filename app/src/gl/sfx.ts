@@ -50,6 +50,8 @@ const BUSES: readonly Bus[] = ['ambience', 'gestures', 'moments', 'music'];
 export interface Mix {
   /** the board's sound switch: the master open or shut */
   on: boolean;
+  /** the master's level, 0 to 1, over every bus */
+  master: number;
   /** the ambience under the table plays at all */
   ambience: boolean;
   /** the era's tunes play at all */
@@ -59,7 +61,7 @@ export interface Mix {
   /** each bus's level, 0 to 1 */
   levels: Record<Bus, number>;
 }
-let mix: Mix = { on: true, ambience: false, music: false, voices: false, levels: { ambience: 0.5, gestures: 0.8, moments: 0.8, music: 0.5 } };
+let mix: Mix = { on: true, master: 1, ambience: false, music: false, voices: false, levels: { ambience: 0.05, gestures: 0.8, moments: 0.8, music: 0.1 } };
 /* a bus at full is still well under the page: the recordings are cut to
    peak at -3 dBFS, the ambiences levelled to -16 LUFS, and a board game is
    played for two hours. The tunes (-20 LUFS) sit under the ambience at the
@@ -71,7 +73,7 @@ let desk: { ac: AudioContext; master: GainNode; bus: Record<Bus, GainNode> } | n
 const busOf = (ac: AudioContext, bus: Bus): GainNode => {
   if (!desk || desk.ac !== ac) {
     const master = ac.createGain();
-    master.gain.setValueAtTime(mix.on ? 1 : 0, ac.currentTime);
+    master.gain.setValueAtTime(mix.on ? mix.master : 0, ac.currentTime);
     master.connect(ac.destination);
     const make = (b: Bus) => {
       const g = ac.createGain();
@@ -86,7 +88,7 @@ const busOf = (ac: AudioContext, bus: Bus): GainNode => {
 
 /** the levels and switches as the board options have them */
 export function setMix(next: Mix): void {
-  mix = { on: next.on, ambience: next.ambience, music: next.music, voices: next.voices, levels: { ...next.levels } };
+  mix = { on: next.on, master: Math.min(1, Math.max(0, next.master)), ambience: next.ambience, music: next.music, voices: next.voices, levels: { ...next.levels } };
   if (desk) {
     const now = desk.ac.currentTime;
     const glide = (p: AudioParam, v: number) => {
@@ -94,7 +96,7 @@ export function setMix(next: Mix): void {
       p.setValueAtTime(p.value, now);
       p.linearRampToValueAtTime(v, now + 0.15);
     };
-    glide(desk.master.gain, mix.on ? 1 : 0);
+    glide(desk.master.gain, mix.on ? mix.master : 0);
     for (const b of BUSES) glide(desk.bus[b].gain, mix.levels[b] * BUS_SCALE[b]);
   }
   applyAmbience();

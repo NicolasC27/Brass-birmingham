@@ -197,6 +197,8 @@ const game = {
     /* the table's sounds: master switch, ambience, the three levels */
     sounds: {
       hint: 'Every sound of the table: the pieces laid, the bell of your turn, the houses under the pointer.',
+      volMaster: 'Master volume',
+      volMasterHint: 'Over every sound of the table at once.',
       ambience: 'Ambience',
       ambienceHint: 'The canal, then the rail, very low under the table. Off when the system asks for less motion.',
       volAmbience: 'Ambience level',
