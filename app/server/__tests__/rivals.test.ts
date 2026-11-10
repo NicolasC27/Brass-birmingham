@@ -172,7 +172,7 @@ describe('the rivals over the wire', () => {
   const answer = (g: Guest, rid: number): Extract<ServerMessage, { t: 'rivals' }> | undefined => g.frames.find((m): m is Extract<ServerMessage, { t: 'rivals' }> => m.t === 'rivals' && m.rid === rid);
 
   it('hands a guest what the characters remember of it, and counts again once a game is played out', async () => {
-    server = await serve({ port: 0, mailer: post, pace: { bot: 0, ceremony: 0 }, sweepEvery: 0, queueEvery: 0, editionEvery: 0, file: ':memory:' });
+    server = await serve({ port: 0, alphaOpen: true, mailer: post, pace: { bot: 0, ceremony: 0 }, sweepEvery: 0, queueEvery: 0, editionEvery: 0, file: ':memory:' });
     const ada = new Guest('Ada');
     guests.push(ada);
     await ada.open(server.port);
@@ -205,7 +205,7 @@ describe('the rivals over the wire', () => {
   });
 
   it('answers nobody who has not said who they are', async () => {
-    server = await serve({ port: 0, mailer: post, pace: { bot: 0, ceremony: 0 }, sweepEvery: 0, queueEvery: 0, editionEvery: 0, file: ':memory:' });
+    server = await serve({ port: 0, alphaOpen: true, mailer: post, pace: { bot: 0, ceremony: 0 }, sweepEvery: 0, queueEvery: 0, editionEvery: 0, file: ':memory:' });
     const stranger = new Guest('Nobody');
     guests.push(stranger);
     await stranger.open(server.port);

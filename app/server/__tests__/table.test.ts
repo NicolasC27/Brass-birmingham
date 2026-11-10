@@ -55,7 +55,7 @@ describe('a table over the wire', () => {
 
   /** two signed-in accounts at a table, the guest ready, waiting on the bell */
   async function seatTwo(pace: Pace = { bot: 0, ceremony: 0 }, file = ':memory:') {
-    server = await serve({ port: 0, mailer: post, pace, sweepEvery: 0, file });
+    server = await serve({ port: 0, alphaOpen: true, mailer: post, pace, sweepEvery: 0, file });
     const host = new Guest('Ada');
     const guest = new Guest('Bob');
     guests.push(host, guest);
@@ -254,7 +254,7 @@ describe('a table over the wire', () => {
   }, 30000);
 
   it('shows the door to a socket that talks too fast, and to the other tabs once the password changes', async () => {
-    server = await serve({ port: 0, mailer: post, pace: { bot: 0, ceremony: 0 }, sweepEvery: 0, file: ':memory:' });
+    server = await serve({ port: 0, alphaOpen: true, mailer: post, pace: { bot: 0, ceremony: 0 }, sweepEvery: 0, file: ':memory:' });
     const ada = new Guest('Ada');
     guests.push(ada);
     await ada.open(server.port);
@@ -292,7 +292,7 @@ describe('a table over the wire', () => {
     await server!.close();
 
     /* and opens on the same tables, the game exactly where it stood */
-    server = await serve({ port: 0, mailer: post, pace: { bot: 60000, ceremony: 60000 }, sweepEvery: 0, file });
+    server = await serve({ port: 0, alphaOpen: true, mailer: post, pace: { bot: 60000, ceremony: 60000 }, sweepEvery: 0, file });
     expect(server.hall.table(code)?.name).toBe(host.table!.name);
     expect(serialize(server.hall.game(code)!.state)).toBe(before);
 
@@ -327,7 +327,7 @@ describe('a table over the wire', () => {
   }, 30000);
 
   it('opens the tables only to a verified address, and carries invitations to the desk', async () => {
-    server = await serve({ port: 0, mailer: post, pace: { bot: 0, ceremony: 0 }, sweepEvery: 0, file: ':memory:' });
+    server = await serve({ port: 0, alphaOpen: true, mailer: post, pace: { bot: 0, ceremony: 0 }, sweepEvery: 0, file: ':memory:' });
     const host = new Guest('Ada');
     const guest = new Guest('Bob');
     guests.push(host, guest);
@@ -485,7 +485,7 @@ describe('a table over the wire', () => {
     const dir = mkdtempSync(path.join(tmpdir(), 'brass-'));
     dirs.push(dir);
     const book = path.join(dir, 'ideas.md');
-    server = await serve({ port: 0, mailer: post, pace: { bot: 60000, ceremony: 60000 }, sweepEvery: 0, file: ':memory:', feedbackFile: book, feedbackTo: 'owner@brass.works' });
+    server = await serve({ port: 0, alphaOpen: true, mailer: post, pace: { bot: 60000, ceremony: 60000 }, sweepEvery: 0, file: ':memory:', feedbackFile: book, feedbackTo: 'owner@brass.works' });
     const ada = new Guest('Ada');
     guests.push(ada);
     await ada.open(server.port);
@@ -513,7 +513,7 @@ describe('a table over the wire', () => {
     /* a real register, and no DEV_LETTERS: the pages are not for the road */
     process.env.FEEDBACK_TOKEN = 'the-owners-key';
     try {
-      server = await serve({ port: 0, mailer: post, pace: { bot: 0, ceremony: 0 }, sweepEvery: 0, file: registerFile() });
+      server = await serve({ port: 0, alphaOpen: true, mailer: post, pace: { bot: 0, ceremony: 0 }, sweepEvery: 0, file: registerFile() });
     } finally {
       delete process.env.FEEDBACK_TOKEN;
     }
@@ -525,7 +525,7 @@ describe('a table over the wire', () => {
   });
 
   it('says nothing to a socket that has not signed in', async () => {
-    server = await serve({ port: 0, mailer: post, pace: { bot: 0, ceremony: 0 }, sweepEvery: 0, file: ':memory:' });
+    server = await serve({ port: 0, alphaOpen: true, mailer: post, pace: { bot: 0, ceremony: 0 }, sweepEvery: 0, file: ':memory:' });
     const stranger = new Guest('Nobody');
     guests.push(stranger);
     await stranger.open(server.port);

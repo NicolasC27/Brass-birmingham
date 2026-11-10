@@ -109,6 +109,11 @@ const landing = {
       { q: 'When, and at what price?', a: 'Neither the date nor the price is set yet. The first 100 confirmed on the list get a year of Premium free, and everyone on the list hears first.' },
     ],
   },
+  alpha: {
+    signIn: 'Sign in',
+    signOut: 'Sign out',
+    noAccess: 'Signed in as {name}. The alpha is not open to this account yet: the direction opens the doors one by one, and writes when your turn comes.',
+  },
   bar: 'Get my ticket',
   final: {
     title: 'The first train leaves soon. Keep your seat.',

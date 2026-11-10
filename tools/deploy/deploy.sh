@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ------------------------------------------------------------------
-# Builds the office and the preview on this machine and puts them on
+# Builds the office and the site on this machine and puts them on
 # the server: the site's files, the office's bundle, the service and
 # the Caddyfile, then restarts what changed.
 #
@@ -26,9 +26,18 @@ here=$(cd "$(dirname "$0")" && pwd)
 cd "$here/../../app"
 
 node server/build.mjs
-VITE_ONLINE_URL=$OFFICE_WS VITE_APP_URL=$APP_URL npm run build:prelaunch
+# what is put up: the alpha (the whole journal, the front page for whoever
+# the direction has not let in) by default, or the preview alone with
+# BLACKRAIL_BUILD=preview
+if [ "${BLACKRAIL_BUILD:-alpha}" = preview ]; then
+  VITE_ONLINE_URL=$OFFICE_WS VITE_APP_URL=$APP_URL npm run build:prelaunch
+  SITE=dist-prelaunch
+else
+  VITE_ALPHA=1 VITE_ONLINE_URL=$OFFICE_WS VITE_APP_URL=$APP_URL npm run build
+  SITE=dist
+fi
 
-rsync -az --delete -e "${SSH[*]}" dist-prelaunch/ "$HOST:/srv/blackrail/site/"
+rsync -az --delete -e "${SSH[*]}" "$SITE/" "$HOST:/srv/blackrail/site/"
 rsync -az -e "${SSH[*]}" server/dist/blackrail-server.mjs "$HOST:/srv/blackrail/office/blackrail-server.mjs"
 rsync -az -e "${SSH[*]}" "$here/office-package.json" "$HOST:/srv/blackrail/office/package.json"
 rsync -az -e "${SSH[*]}" "$here/Caddyfile" "$here/blackrail-office.service" "$here/geo-update.sh" "$here/blackrail-geo.service" "$here/blackrail-geo.timer" "$HOST:/tmp/"

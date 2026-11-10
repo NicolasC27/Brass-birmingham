@@ -119,7 +119,7 @@ describe('the door', () => {
   const answer = (g: Guest, rid: number) => g.until(`rid ${rid}`, () => !!g.frames.find((f) => 'rid' in f && f.rid === rid)).then(() => g.frames.find((f) => 'rid' in f && f.rid === rid)!);
 
   it('asks for the charter, waits after too many wrong passwords, and gives no socket to a page from elsewhere', async () => {
-    server = await serve({ port: 0, mailer: post, pace: { bot: 0, ceremony: 0 }, sweepEvery: 0, file: ':memory:', origins: ['https://blackrail.example'] });
+    server = await serve({ port: 0, alphaOpen: true, mailer: post, pace: { bot: 0, ceremony: 0 }, sweepEvery: 0, file: ':memory:', origins: ['https://blackrail.example'] });
     const ada = await arrive('Ada');
     const dan = new Guest('Dan');
     guests.push(dan);
@@ -161,7 +161,7 @@ describe('the door', () => {
   });
 
   it('hands a member their data, and closes the account on their word', async () => {
-    server = await serve({ port: 0, mailer: post, pace: { bot: 0, ceremony: 0 }, sweepEvery: 0, file: ':memory:' });
+    server = await serve({ port: 0, alphaOpen: true, mailer: post, pace: { bot: 0, ceremony: 0 }, sweepEvery: 0, file: ':memory:' });
     const ada = await arrive('Ada');
     ada.send({ t: 'export', rid: 40 });
     const taken = await answer(ada, 40);

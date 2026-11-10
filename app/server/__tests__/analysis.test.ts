@@ -148,7 +148,7 @@ describe('a reading shared over the wire', () => {
 
   /** a table of two, the game begun and a few moves played */
   async function begun() {
-    server = await serve({ port: 0, mailer: post, pace: { bot: 0, ceremony: 0 }, sweepEvery: 0, file: ':memory:' });
+    server = await serve({ port: 0, alphaOpen: true, mailer: post, pace: { bot: 0, ceremony: 0 }, sweepEvery: 0, file: ':memory:' });
     const [host, guest, watcher] = [new Guest('Ada'), new Guest('Bob'), new Guest('Cy')];
     guests.push(host, guest, watcher);
     for (const g of guests) await g.open(server.port);

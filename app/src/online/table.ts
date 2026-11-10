@@ -77,6 +77,17 @@ export interface Identity {
   name: string;
 }
 
+/** a member as the direction's register lists them */
+export interface Member {
+  id: string;
+  name: string;
+  email: string | null;
+  createdAt: number;
+  verified: boolean;
+  guest: boolean;
+  alpha: boolean;
+}
+
 /** the account, as its owner sees it */
 export interface Me extends Identity {
   email: string | null;
@@ -95,6 +106,10 @@ export interface Me extends Identity {
   guest: boolean;
   /** of the direction: the waiting list and its circulars are open to it */
   admin?: boolean;
+  /** let into the alpha: the tables, the queues and the games at home are
+   *  open to it. The direction grants it account by account; its own
+   *  members always have it */
+  alpha: boolean;
 }
 
 /** a paper the office keeps for an account: what the browser wrote, as it wrote it */

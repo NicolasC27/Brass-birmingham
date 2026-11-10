@@ -12,8 +12,13 @@ export const OFFICE_HTTP = String(import.meta.env.VITE_ONLINE_URL ?? '').trim().
 /** before the line opens, the preview is the whole site but the direction's way in */
 export const PRELAUNCH = String(import.meta.env.VITE_PRELAUNCH ?? '') === '1';
 
+/** the alpha: the whole journal is built and served, but the front page is
+ *  the preview's for whoever the direction has not let in — a stranger, or
+ *  a member without the alpha — and the way in is the account page */
+export const ALPHA = String(import.meta.env.VITE_ALPHA ?? '') === '1';
+
 /** where the preview's front page stands */
-export const PREVIEW = PRELAUNCH ? '/' : '/avant-premiere';
+export const PREVIEW = PRELAUNCH || ALPHA ? '/' : '/avant-premiere';
 
 /** a request to the office's front desk: its status (0 when nothing
  *  answered) and what it said */

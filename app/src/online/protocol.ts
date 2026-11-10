@@ -4,7 +4,7 @@ import type { JudgeId } from '@/game/analysis';
 import type { Held, ReadingPart } from '@/game/analysisMerge';
 import type { Rivalry } from '@/game/rivalry';
 import type { GameState, SetupPayload } from '@/game/types';
-import type { CompanyBoard, HomeSave, HomeTable, Paper, Season, SeasonReview, Edition, ChallengeBoard, AuthError, Desk, Identity, Leaderboard, LobbyError, Me, QueueState, Table, TableQuery, TablesPage } from './table';
+import type { CompanyBoard, HomeSave, HomeTable, Paper, Season, SeasonReview, Edition, ChallengeBoard, AuthError, Desk, Identity, Leaderboard, LobbyError, Me, QueueState, Table, TableQuery, TablesPage, Member } from './table';
 import type { Audience, WaitBook } from './waitlist';
 import type { GuideFunnel, TrailEvent, TrailFilter } from './guideTrail';
 import type { Line, Report, Room, Unread } from './parlour';
@@ -206,6 +206,8 @@ export type ClientMessage =
   | { t: 'admin.guide'; rid: number; filter?: TrailFilter }
   /** a member silenced in the parlour for so many hours (0 lifts it) */
   | { t: 'admin.silence'; rid: number; id: string; hours: number }
+  | { t: 'admin.members'; rid: number }
+  | { t: 'admin.alpha'; rid: number; id: string; on: boolean }
   /** the lines reported to the direction, and one of them put away */
   | { t: 'admin.reports'; rid: number }
   | { t: 'admin.dismiss'; rid: number; id: string }
@@ -282,6 +284,7 @@ export type ServerMessage =
   | { t: 'admin.guide'; rid: number; funnel: GuideFunnel }
   /** the lines reported, newest first, as the direction reads them */
   | { t: 'admin.reports'; rid: number; reports: Report[] }
+  | { t: 'admin.members'; rid: number; members: Member[] }
   | { t: 'pong' };
 
 /** a name or an address: the office does not say which was wrong */

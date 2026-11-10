@@ -43,7 +43,7 @@ describe('a game at home', () => {
   });
 
   const open = async (file = ':memory:') => {
-    server = await serve({ port: 0, mailer: post, pace: { bot: 0, ceremony: 0 }, sweepEvery: 0, queueEvery: 0, editionEvery: 0, file });
+    server = await serve({ port: 0, alphaOpen: true, mailer: post, pace: { bot: 0, ceremony: 0 }, sweepEvery: 0, queueEvery: 0, editionEvery: 0, file });
     return server;
   };
 

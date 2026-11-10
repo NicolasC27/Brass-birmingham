@@ -16,7 +16,7 @@ import { PING_SHOWER, PING_WINDOW_MS, TELEGRAM_COOLDOWN_MS, isTelegramKey } from
 import { LINKS, MERCHANT_BY_ID, TOWN_BY_ID } from '@/game/data';
 import type { ClientMessage, ServerMessage } from '@/online/protocol';
 import type { JudgeId } from '@/game/analysis';
-import type { Me, TableQuery } from '@/online/table';
+import type { Me, TableQuery, Member } from '@/online/table';
 import { normalizeCode, HOME_OPEN_CAP } from '@/online/table';
 import { SAY_SHOWER, SAY_WINDOW_MS, cleanLine, friendRoom, hasLink, roomOf, tableRoom } from '@/online/parlour';
 import type { Room } from '@/online/parlour';
@@ -253,6 +253,9 @@ export interface ServeOptions {
   /** the addresses of the direction (BLACKRAIL_ADMINS, comma-separated): their
    *  accounts, once verified, read and write to the waiting list */
   admins?: string[];
+  /** the alpha open to every verified member (BLACKRAIL_ALPHA_OPEN=1): no
+   *  door to open one by one — for the day the line opens, and the tests */
+  alphaOpen?: boolean;
   /** circular letters a day at most (MAIL_DAILY_CAP, 80 by default) */
   mailCap?: number;
   /** how often the waiting circulars are looked at (0: never) */
@@ -300,7 +303,10 @@ export function serve(options: ServeOptions = {}): Promise<Serving> {
   /* the direction: a few addresses, named by the environment, never by the register */
   const admins = new Set((options.admins ?? (process.env.BLACKRAIL_ADMINS ?? '').split(',')).map((e) => e.trim().toLowerCase()).filter(Boolean));
   const isAdmin = (a: { email: string | null; verified: boolean }): boolean => a.verified && !!a.email && admins.has(a.email.trim().toLowerCase());
-  const me = (a: Account): Me => ({ id: a.id, name: a.name, email: a.email, verified: a.verified, motto: a.motto, favoriteColor: a.favoriteColor, head: a.head, createdAt: a.createdAt, newsletter: a.newsletter, guest: a.guest, ...(isAdmin(a) ? { admin: true } : {}) });
+  /* let into the alpha: by the direction, or of it — or everyone, once the line is open */
+  const alphaOpen = options.alphaOpen ?? process.env.BLACKRAIL_ALPHA_OPEN === '1';
+  const inAlpha = (a: { email: string | null; verified: boolean; alpha: boolean }): boolean => alphaOpen || a.alpha || isAdmin(a);
+  const me = (a: Account): Me => ({ id: a.id, name: a.name, email: a.email, verified: a.verified, motto: a.motto, favoriteColor: a.favoriteColor, head: a.head, createdAt: a.createdAt, newsletter: a.newsletter, guest: a.guest, alpha: inAlpha(a), ...(isAdmin(a) ? { admin: true } : {}) });
   const waitlist = new Waitlist(file);
   const waitLetter = waitLetters(options.appUrl ?? process.env.APP_URL ?? 'http://localhost:3000', options.officeUrl ?? process.env.OFFICE_URL ?? '');
   const mailCap = options.mailCap ?? (Number.parseInt(process.env.MAIL_DAILY_CAP ?? '', 10) || MAIL_DAILY_CAP);
@@ -915,6 +921,10 @@ export function serve(options: ServeOptions = {}): Promise<Serving> {
         send(c, { t: 'tables', rid: m.rid, page: hall.page(who.id, c.tablesQuery) });
         return;
       case 'seatme': {
+        if (!inAlpha(who)) {
+          send(c, { t: 'refused', rid: m.rid, error: 'no-alpha' });
+          return;
+        }
         const table = hall.seatMe(who, m.color);
         c.watching.add(table.code);
         send(c, { t: 'seated', rid: m.rid, table });
@@ -943,6 +953,11 @@ export function serve(options: ServeOptions = {}): Promise<Serving> {
         send(c, { t: 'home.save', rid: m.rid, save: typeof m.code === 'string' ? home.save(who.id, normalizeCode(m.code)) : null });
         return;
       case 'home.open': {
+        /* a game at home is the alpha's too */
+        if (!inAlpha(who)) {
+          send(c, { t: 'refused', rid: m.rid, error: 'no-alpha' });
+          return;
+        }
         const name = typeof m.name === 'string' ? m.name.trim().slice(0, MAX_TABLE_NAME) : '';
         if (!name || !Number.isInteger(m.seed) || m.seed < 0 || !m.setup) {
           send(c, { t: 'refused', rid: m.rid, error: 'refused' });
@@ -1157,6 +1172,11 @@ export function serve(options: ServeOptions = {}): Promise<Serving> {
       send(c, { t: 'refused', rid: 'rid' in m ? m.rid : undefined, error: 'verify-first' });
       return;
     }
+    /* …and the direction must have let it into the alpha */
+    if (!inAlpha(who)) {
+      send(c, { t: 'refused', rid: 'rid' in m ? m.rid : undefined, error: 'no-alpha' });
+      return;
+    }
     switch (m.t) {
       /* the parlour: a line said, a page read, a room read up to here, a
          line reported. Each room says who hears it (roomFor) */
@@ -1367,6 +1387,9 @@ export function serve(options: ServeOptions = {}): Promise<Serving> {
   /** the game a reading is of: the table's own, or the record of one played
    *  out at it — and null when this socket has no business reading it */
   /** a request of the direction's, from an account already found to be of it */
+  /** the members as the direction reads them: the alpha as it stands for each, the direction's own included */
+  const register = (): Member[] => store.members().map((x) => ({ ...x, alpha: inAlpha(x) }));
+
   async function direction(c: Client, account: Account, m: ClientMessage): Promise<void> {
     const book = (rid: number) => send(c, { t: 'admin.book', rid, book: waitlist.book(mailCap) });
     switch (m.t) {
@@ -1388,6 +1411,21 @@ export function serve(options: ServeOptions = {}): Promise<Serving> {
         store.dropFlag(String(m.id));
         send(c, { t: 'done', rid: m.rid });
         return;
+      case 'admin.members':
+        send(c, { t: 'admin.members', rid: m.rid, members: register() });
+        return;
+      case 'admin.alpha': {
+        const target = store.account(String(m.id));
+        if (!target) {
+          send(c, { t: 'refused', rid: m.rid, error: 'not-found' });
+          return;
+        }
+        store.setAlpha(target.id, m.on === true);
+        /* the member learns of it at once, wherever they are signed in */
+        pushMe(target.id);
+        send(c, { t: 'admin.members', rid: m.rid, members: register() });
+        return;
+      }
       case 'admin.silence': {
         const hours = Number(m.hours);
         const target = store.account(String(m.id));

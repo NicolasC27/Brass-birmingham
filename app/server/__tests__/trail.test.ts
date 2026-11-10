@@ -97,7 +97,7 @@ describe('the trail over the wire', () => {
     server = null;
     for (const d of dirs.splice(0)) rmSync(d, { recursive: true, force: true });
   });
-  const open = (file = ':memory:') => serve({ port: 0, mailer: post, pace: { bot: 0, ceremony: 0 }, sweepEvery: 0, editionEvery: 0, circularEvery: 0, file, admins: ['ada@example.test'] });
+  const open = (file = ':memory:') => serve({ port: 0, alphaOpen: true, mailer: post, pace: { bot: 0, ceremony: 0 }, sweepEvery: 0, editionEvery: 0, circularEvery: 0, file, admins: ['ada@example.test'] });
   const seat = async (name: string, how: 'guest' | 'signup' | 'none' = 'guest'): Promise<Guest> => {
     const g = new Guest(name);
     guests.push(g);

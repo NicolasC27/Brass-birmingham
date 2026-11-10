@@ -111,6 +111,11 @@ const landing: Dict['landing'] = {
       { q: 'Quand, et à quel prix ?', a: 'Ni la date ni le prix ne sont encore fixés. Les 100 premiers confirmés sur la liste reçoivent un an de Premium offert, et tous les inscrits l’apprennent en premier.' },
     ],
   },
+  alpha: {
+    signIn: 'Se connecter',
+    signOut: 'Se déconnecter',
+    noAccess: 'Connecté comme {name}. L’alpha n’est pas encore ouverte à ce compte : la direction ouvre les portes une à une, et vous écrit quand c’est votre tour.',
+  },
   bar: 'Prendre mon billet',
   final: {
     title: 'Le premier convoi part bientôt. Gardez votre place.',

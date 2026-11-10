@@ -48,7 +48,7 @@ describe('the hall', () => {
   /** the house, open for the test: no sweeping, the queues on the test's own clock */
   async function open(file = ':memory:', pace = { bot: 0, ceremony: 0 }) {
     now = Date.now();
-    server = await serve({ port: 0, mailer: post, pace, sweepEvery: 0, queueEvery: 0, clock: () => now, file });
+    server = await serve({ port: 0, alphaOpen: true, mailer: post, pace, sweepEvery: 0, queueEvery: 0, clock: () => now, file });
     return server;
   }
 

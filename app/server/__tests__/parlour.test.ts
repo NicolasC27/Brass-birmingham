@@ -39,7 +39,7 @@ describe('the parlour', () => {
   });
 
   async function open() {
-    server = await serve({ port: 0, mailer: post, pace: { bot: 0, ceremony: 0 }, sweepEvery: 0, queueEvery: 0, editionEvery: 0, circularEvery: 0, file: ':memory:', admins: ['ada@example.test'] });
+    server = await serve({ port: 0, alphaOpen: true, mailer: post, pace: { bot: 0, ceremony: 0 }, sweepEvery: 0, queueEvery: 0, editionEvery: 0, circularEvery: 0, file: ':memory:', admins: ['ada@example.test'] });
     return server;
   }
 

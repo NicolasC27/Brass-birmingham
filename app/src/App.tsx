@@ -8,7 +8,8 @@ import Boundary from "@/components/platform/Boundary";
 import { Routes, Route, Navigate, useLocation } from "react-router";
 import Layout from "@/components/Layout";
 import Home from "@/pages/Home";
-import { PRELAUNCH } from "@/landing/office";
+import { ALPHA, PRELAUNCH } from "@/landing/office";
+import { useLine, useSession, useStranger } from "@/online/session";
 
 /* the front page and the shell come with the paper; every other page is
    fetched when first opened, so the journal opens light */
@@ -52,7 +53,16 @@ const BACKSTAGE = /^\/(direction|account)(\/|$)/;
 
 export default function App() {
   const { pathname } = useLocation();
-  const preview = pathname === "/avant-premiere" || pathname.startsWith("/avant-premiere/") || pathname === "/demo" || (PRELAUNCH && !BACKSTAGE.test(pathname));
+  /* the alpha: the journal opens to whoever the direction has let in; a
+     stranger or a member without it reads the front page, and only the
+     account page and the direction's desk stay reachable */
+  const session = useSession();
+  const stranger = useStranger();
+  const line = useLine();
+  const gated = ALPHA && !BACKSTAGE.test(pathname) && !(session?.alpha || session?.admin);
+  const preview = pathname === "/avant-premiere" || pathname.startsWith("/avant-premiere/") || pathname === "/demo" || (PRELAUNCH && !BACKSTAGE.test(pathname)) || (gated && (stranger || !!session || line === "offline"));
+  /* the office has not said yet who this is: a moment, not the wrong page */
+  if (gated && !preview) return <Arriving />;
   if (preview) {
     return (
       <MotionConfig reducedMotion="user">

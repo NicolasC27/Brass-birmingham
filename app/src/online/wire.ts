@@ -1,6 +1,6 @@
 import { decode, encode } from './protocol';
 import type { ClientMessage, ServerMessage } from './protocol';
-import type { CompanyBoard, HomeSave, HomeTable, Paper, Season, SeasonReview, Edition, ChallengeBoard, Desk, Me, Leaderboard, TableQuery, TablesPage } from './table';
+import type { CompanyBoard, HomeSave, HomeTable, Paper, Season, SeasonReview, Edition, ChallengeBoard, Desk, Me, Leaderboard, TableQuery, TablesPage, Member } from './table';
 import type { Audience, WaitBook } from './waitlist';
 import type { GuideFunnel, TrailEvent, TrailFilter } from './guideTrail';
 import type { Report } from './parlour';
@@ -351,6 +351,16 @@ export class Wire {
     const m = await this.ask((rid) => ({ t: 'admin.reports', rid }));
     if (m.t !== 'admin.reports') throw new Error('no-reports');
     return m.reports;
+  }
+
+  async adminMembers(): Promise<Member[]> {
+    const m = await this.ask((rid) => ({ t: 'admin.members', rid }));
+    if (m.t !== 'admin.members') throw new Error('no-members');
+    return m.members;
+  }
+
+  async adminAlpha(id: string, on: boolean): Promise<void> {
+    await this.ask((rid) => ({ t: 'admin.alpha', rid, id, on }));
   }
 
   async adminSilence(id: string, hours: number): Promise<void> {

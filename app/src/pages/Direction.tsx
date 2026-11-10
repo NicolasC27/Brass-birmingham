@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import { Link, useParams } from 'react-router';
-import { Download, GraduationCap, RefreshCw, Send, TestTube2, VolumeX, Volume2, Archive } from 'lucide-react';
+import { Download, GraduationCap, KeyRound, RefreshCw, Send, TestTube2, VolumeX, Volume2, Archive } from 'lucide-react';
 import PageShell, { Field, Panel, Refusal, inputClass } from '@/components/site/PageShell';
 import { onlineWire } from '@/online/net';
-import type { Me } from '@/online/table';
+import type { Me, Member } from '@/online/table';
 import type { Report } from '@/online/parlour';
 import { roomOf } from '@/online/parlour';
 import { FOUNDERS, MAX_BODY, MAX_SUBJECT, WAIT_LANGS, founders, reach } from '@/online/waitlist';
@@ -30,6 +30,72 @@ const LANG_NAMES: Record<WaitLang, string> = { fr: 'Français', en: 'Anglais', e
 const date = (t: number) => new Date(t).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' });
 const stamp = (t: number) => new Date(t).toLocaleString('fr-FR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
 const plural = (n: number, one: string, many: string) => `${n.toLocaleString('fr-FR')} ${Math.abs(n) < 2 ? one : many}`;
+
+/* ------------------------------ Les comptes ------------------------------ */
+
+/** the members' register: who has an account, and who the direction has let
+ *  into the alpha — a switch a line, nothing else to do here */
+function Members({ members, onAlpha }: { members: Member[]; onAlpha: (m: Member, on: boolean) => void }) {
+  const [q, setQ] = useState('');
+  const [show, setShow] = useState<'all' | 'alpha' | 'out'>('all');
+  const rows = useMemo(() => {
+    const needle = q.trim().toLowerCase();
+    return members.filter((m) => (show === 'all' || (show === 'alpha') === m.alpha) && (!needle || m.name.toLowerCase().includes(needle) || (m.email ?? '').toLowerCase().includes(needle)));
+  }, [members, q, show]);
+  const inAlpha = members.filter((m) => m.alpha).length;
+  return (
+    <Panel title="Les comptes" meta={`${plural(members.length, 'compte', 'comptes')} · ${inAlpha} dans l’alpha`}>
+      <p className="mb-4 font-ui text-[12.5px] leading-relaxed text-iron-400">Un compte s’ouvre librement, mais ne joue que si la direction lui ouvre l’alpha. La direction y est d’office.</p>
+      <div className="mb-4 flex flex-wrap items-center gap-3">
+        <input className={cn(inputClass, 'max-w-[320px]')} type="search" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Chercher un nom, une adresse…" aria-label="Chercher un compte" />
+        <select className={cn(inputClass, 'w-auto')} value={show} onChange={(e) => setShow(e.target.value as 'all' | 'alpha' | 'out')} aria-label="Filtrer les comptes">
+          <option value="all">Tous</option>
+          <option value="alpha">Dans l’alpha</option>
+          <option value="out">Sans accès</option>
+        </select>
+      </div>
+      <div className="overflow-x-auto">
+        <table className="w-full border-collapse font-ui text-[13px]">
+          <thead>
+            <tr className="border-b border-[var(--gz-ink-soft)] text-left">
+              {['Nom', 'Adresse', 'Inscrit', 'Vérifié', 'Alpha'].map((h) => (
+                <th key={h} scope="col" className="micro-label whitespace-nowrap px-2 py-2 font-normal text-iron-400">
+                  {h}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {rows.slice(0, 500).map((m) => (
+              <tr key={m.id} className="border-b border-[var(--gz-ink-faint)]">
+                <td className="max-w-[200px] truncate px-2 py-2 text-paper-100">
+                  {m.name}
+                  {m.guest && <span className="micro-label ml-2 text-iron-400">invité</span>}
+                </td>
+                <td className="max-w-[260px] truncate px-2 py-2 text-paper-300">{m.email ?? '—'}</td>
+                <td className="whitespace-nowrap px-2 py-2 tabular-nums text-paper-300">{date(m.createdAt)}</td>
+                <td className="px-2 py-2 text-paper-300">{m.verified ? 'oui' : <span className="text-iron-400">non</span>}</td>
+                <td className="px-2 py-2">
+                  <button
+                    type="button"
+                    role="switch"
+                    aria-checked={m.alpha}
+                    onClick={() => onAlpha(m, !m.alpha)}
+                    className={cn(button, 'gz-ticket-sm', m.alpha && 'gz-ticket-brass')}
+                    title={m.alpha ? 'Fermer l’alpha à ce compte' : 'Ouvrir l’alpha à ce compte'}
+                  >
+                    <KeyRound aria-hidden /> {m.alpha ? 'Ouverte' : 'Ouvrir'}
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        {!rows.length && <p className="mt-3 font-serif text-[14px] italic text-paper-300">Aucun compte ne répond à cette recherche.</p>}
+      </div>
+    </Panel>
+  );
+}
 
 /** the book as a spreadsheet: one line an address, the fields quoted */
 function csvOf(rows: Entrant[], premium: Set<string>): string {
@@ -520,6 +586,7 @@ export default function Direction() {
   const session = useMe();
   const [book, setBook] = useState<WaitBook | null>(null);
   const [reports, setReports] = useState<Report[]>([]);
+  const [members, setMembers] = useState<Member[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [at, setAt] = useState(0);
   const admin = session?.admin === true;
@@ -530,6 +597,7 @@ export default function Direction() {
     try {
       setBook(await (ask ?? (() => w.adminBook()))());
       setReports(await w.adminReports());
+      setMembers(await w.adminMembers());
       setAt(Date.now());
       setError(null);
     } catch (e) {
@@ -636,6 +704,16 @@ export default function Direction() {
               <Circulars circulars={book.circulars} onStop={(id) => void read(() => onlineWire()!.adminStop(id))} />
             </Panel>
           </div>
+
+          <Members
+            members={members}
+            onAlpha={(m, on) => {
+              const w = onlineWire();
+              if (!w) return;
+              /* the register is the office's answer: the switch is shown as it stands there */
+              w.adminAlpha(m.id, on).then(() => w.adminMembers().then(setMembers), (e: unknown) => setError(`L’office n’a pas voulu : ${(e as Error).message}`));
+            }}
+          />
 
           <Panel title="Le parloir" meta={reports.length ? plural(reports.length, 'ligne signalée', 'lignes signalées') : undefined}>
             <Parlour reports={reports} onAct={(act) => void act().then(() => read(), (e: unknown) => setError(`L’office n’a pas répondu : ${(e as Error).message}`))} />

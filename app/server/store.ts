@@ -5,7 +5,7 @@ import type { PlayerColor } from '@/components/setup/constants';
 import type { GameAction } from '@/game/actions';
 import type { GameState, SetupPayload } from '@/game/types';
 import type { Held } from '@/game/analysisMerge';
-import type { ChallengeBoard, ChallengeRow, Company, CompanyBoard, CompanyRow, Edition, Friend, HomeSave, HomeTable, Paper, SeasonReview, Identity, Invitation, Leaderboard, LeaderRow, Me, PastGame, Purse, Rating, Season, Stats, Table } from '@/online/table';
+import type { ChallengeBoard, ChallengeRow, Company, CompanyBoard, CompanyRow, Edition, Friend, HomeSave, HomeTable, Paper, SeasonReview, Identity, Invitation, Leaderboard, LeaderRow, Me, PastGame, Purse, Rating, Season, Stats, Table, Member } from '@/online/table';
 import { COUNTER_BY_ID, FREE_ITEMS, GUINEAS } from '@/online/counter';
 import { randomId } from '@/online/table';
 import { TRAIL_CAP, TRAIL_MS, dayOf, funnelOf } from '@/online/guideTrail';
@@ -301,6 +301,7 @@ const GROWTH: [table: string, column: string, ddl: string][] = [
   ['accounts', 'createdIp', 'text'],
   ['accounts', 'portrait', 'text'],
   ['accounts', 'head', 'integer'],
+  ['accounts', 'alpha', 'integer not null default 0'],
   ['accounts', 'acceptedAt', 'integer'],
   ['accounts', 'closedAt', 'integer'],
   ['accounts', 'guest', 'integer not null default 0'],
@@ -375,6 +376,8 @@ interface AccountRow {
   motto: string;
   favoriteColor: string | null;
   head: number | null;
+  /** let into the alpha by the direction */
+  alpha: boolean;
   acceptedAt: number | null;
   closedAt: number | null;
   newsletter: number | null;
@@ -388,7 +391,7 @@ export interface Origin {
 }
 
 const COLORS: PlayerColor[] = ['brass', 'oxblood', 'verdigris', 'steel'];
-const ACCOUNT_COLUMNS = 'id, name, createdAt, email, verifiedAt, motto, favoriteColor, acceptedAt, closedAt, newsletter, head, guest';
+const ACCOUNT_COLUMNS = 'id, name, createdAt, email, verifiedAt, motto, favoriteColor, acceptedAt, closedAt, newsletter, head, alpha, guest';
 
 function accountOf(r: AccountRow): Account {
   return {
@@ -400,6 +403,7 @@ function accountOf(r: AccountRow): Account {
     motto: r.motto ?? '',
     favoriteColor: COLORS.includes(r.favoriteColor as PlayerColor) ? (r.favoriteColor as PlayerColor) : null,
     head: headOf(r.head),
+    alpha: r.alpha === 1,
     acceptedAt: r.acceptedAt,
     closedAt: r.closedAt,
     newsletter: r.newsletter === 1,
@@ -1012,6 +1016,17 @@ export class Store {
   }
 
   /** the direction's silence on a member, until when (0 lifts it) */
+  /** the direction's register of members: every account not closed, newest first */
+  members(): Member[] {
+    const rows = this.db.prepare(`select ${ACCOUNT_COLUMNS} from accounts where closedAt is null order by createdAt desc`).all() as AccountRow[];
+    return rows.map(accountOf).map((a) => ({ id: a.id, name: a.name, email: a.email, createdAt: a.createdAt, verified: a.verified, guest: a.guest, alpha: a.alpha }));
+  }
+
+  /** the alpha opened to this member, or shut */
+  setAlpha(accountId: string, on: boolean): void {
+    this.db.prepare('update accounts set alpha = ? where id = ?').run(on ? 1 : 0, accountId);
+  }
+
   silence(accountId: string, until: number, byId: string, at = Date.now()): void {
     if (until <= at) this.db.prepare('delete from silences where accountId = ?').run(accountId);
     else this.db.prepare('insert into silences (accountId, until, byId, at) values (?, ?, ?, ?) on conflict (accountId) do update set until = excluded.until, byId = excluded.byId, at = excluded.at').run(accountId, until, byId, at);

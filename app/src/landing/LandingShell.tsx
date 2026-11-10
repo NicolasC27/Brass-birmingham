@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react';
 import { Link, Outlet, useLocation } from 'react-router';
-import { Moon, Sun, Ticket } from 'lucide-react';
+import { KeyRound, Moon, Sun, Ticket } from 'lucide-react';
 import { LANGS, setLang, useLang, useT } from '@/i18n';
 import { toggleTheme, useTheme } from '@/platform/theme';
 import { usePageTitle } from '@/platform/title';
 import { cn } from '@/lib/utils';
-import { PREVIEW, toTheTicket } from './office';
+import { ALPHA, PREVIEW, toTheTicket } from './office';
+import { signOut, useSession, useStranger } from '@/online/session';
 import { DISCORD_URL, DiscordMark } from './Discord';
 
 /* ------------------------------------------------------------------ */
@@ -29,6 +30,8 @@ function Languages() {
 }
 
 export default function LandingShell() {
+  const session = useSession();
+  const stranger = useStranger();
   const t = useT();
   const theme = useTheme();
   usePageTitle();
@@ -66,6 +69,20 @@ export default function LandingShell() {
                 {t('landing.bar')}
               </button>
             )}
+            {/* the alpha's door: a member signs in here; one the direction has
+                not let in yet is told so, and may sign out */}
+            {ALPHA && stranger && (
+              <Link to="/account" state={{ from: '/' }} className="micro-label mr-1 flex items-center gap-1.5 px-2 py-1.5 text-paper-300 transition-colors hover:text-paper-100">
+                <KeyRound className="h-3.5 w-3.5" aria-hidden />
+                {t('landing.alpha.signIn')}
+              </Link>
+            )}
+            {ALPHA && session && (
+              <button type="button" onClick={signOut} className="micro-label mr-1 flex items-center gap-1.5 px-2 py-1.5 text-paper-300 transition-colors hover:text-paper-100" title={t('landing.alpha.signOut')}>
+                <KeyRound className="h-3.5 w-3.5" aria-hidden />
+                {session.name}
+              </button>
+            )}
             {DISCORD_URL && (
               <a href={DISCORD_URL} target="_blank" rel="noreferrer" className="micro-label mr-1 flex items-center gap-1.5 px-2 py-1.5 text-paper-300 transition-colors hover:text-paper-100">
                 <DiscordMark className="h-3.5 w-3.5" />
@@ -79,6 +96,11 @@ export default function LandingShell() {
           </span>
         </div>
       </header>
+      {ALPHA && session && !(session.alpha || session.admin) && (
+        <div role="status" className="border-b border-[var(--gz-ink-soft)] bg-[rgb(var(--lacquer-900)/.6)]">
+          <p className="gz-measure py-2.5 font-serif text-[13.5px] italic leading-snug text-paper-300">{t('landing.alpha.noAccess', { name: session.name })}</p>
+        </div>
+      )}
       <main id="main" tabIndex={-1} className="relative flex-1 outline-none">
         <Outlet />
       </main>

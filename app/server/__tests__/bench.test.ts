@@ -37,7 +37,7 @@ describe('the test bench on the office', () => {
   const open = async (bench: boolean) => {
     if (bench) process.env.DEV_LETTERS = '1';
     else delete process.env.DEV_LETTERS;
-    server = await serve({ port: 0, mailer: post, pace: { bot: 0, ceremony: 0 }, sweepEvery: 0, queueEvery: 0, editionEvery: 0, file: ':memory:' });
+    server = await serve({ port: 0, alphaOpen: true, mailer: post, pace: { bot: 0, ceremony: 0 }, sweepEvery: 0, queueEvery: 0, editionEvery: 0, file: ':memory:' });
   };
 
   /** a guest at the far end with a game at home dealt */

@@ -25,13 +25,13 @@ export default defineConfig({
   /* relative for the desktop shell; the preview is served from a domain's
      root and opened on deep links (/avant-premiere/confirmer/…), so its
      files are addressed from the root */
-  base: process.env.VITE_PRELAUNCH === '1' ? '/' : './',
+  base: process.env.VITE_PRELAUNCH === '1' || process.env.VITE_ALPHA === '1' ? '/' : './',
   plugins: [
     /* the preview is the landing and a two-round taste of the game: the
        game's words and pictures come with it, fetched only when played.
        The page is written out as index.html, beside what the search
        engines read first */
-    ...(process.env.VITE_PRELAUNCH === '1'
+    ...(process.env.VITE_PRELAUNCH === '1' || process.env.VITE_ALPHA === '1'
       ? [
           {
             name: 'blackrail-preview-page',
@@ -51,7 +51,7 @@ export default defineConfig({
       : []),
     /* the inspector's source paths stay on the developer's pages: the
        preview is public, and says nothing of how the code is laid out */
-    ...(process.env.VITE_PRELAUNCH === '1' ? [] : [inspectAttr()]),
+    ...(process.env.VITE_PRELAUNCH === '1' || process.env.VITE_ALPHA === '1' ? [] : [inspectAttr()]),
     react(),
     /* the address the cards a link shows point at: VITE_APP_URL, else the root */
     {

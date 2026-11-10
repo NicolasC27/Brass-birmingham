@@ -101,7 +101,7 @@ describe('the front desk and the direction', () => {
     server = null;
     sent.length = 0;
   });
-  const open = () => serve({ port: 0, mailer, pace: { bot: 0, ceremony: 0 }, sweepEvery: 0, editionEvery: 0, circularEvery: 0, file: ':memory:', origins: ['https://blackrail.example'], admins: ['ada@example.test'], appUrl: 'https://blackrail.example', officeUrl: 'https://office.blackrail.example', locate: (ip) => (ip === '127.0.0.1' || ip === '::ffff:127.0.0.1' ? 'IN' : '') });
+  const open = () => serve({ port: 0, alphaOpen: true, mailer, pace: { bot: 0, ceremony: 0 }, sweepEvery: 0, editionEvery: 0, circularEvery: 0, file: ':memory:', origins: ['https://blackrail.example'], admins: ['ada@example.test'], appUrl: 'https://blackrail.example', officeUrl: 'https://office.blackrail.example', locate: (ip) => (ip === '127.0.0.1' || ip === '::ffff:127.0.0.1' ? 'IN' : '') });
   const at = (path: string, body: unknown, origin = 'https://blackrail.example') =>
     fetch(`http://127.0.0.1:${server!.port}${path}`, { method: 'POST', headers: { 'content-type': 'application/json', origin }, body: JSON.stringify(body) });
   const until = async (what: string, ready: () => boolean) => {
