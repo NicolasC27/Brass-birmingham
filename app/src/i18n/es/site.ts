@@ -251,6 +251,8 @@ const site: typeof enSite = {
     hintNone: 'Ningún servidor lleva aquí el buzón de ideas, y esta versión no conoce ninguna dirección a la que escribir.',
     send: 'Enviar',
     mail: 'Enviar por correo',
+    shotAttach: 'Adjuntar la mesa',
+    shotNote: 'una fotografía de su tablero tal como está en pantalla y la partida en unas líneas (ronda, últimos movimientos, asientos) van con el informe, para ver qué falla.',
     sent: 'Recibido — gracias.',
     failed: 'La casa no ha respondido. Inténtelo de nuevo en un momento.',
   },

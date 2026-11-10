@@ -490,7 +490,9 @@ describe('a table over the wire', () => {
     guests.push(ada);
     await ada.open(server.port);
     await ada.signUp(false);
-    ada.send({ t: 'feedback', rid: 30, page: '/game', kind: 'bug', text: 'The barge sails backwards.' });
+    /* a bug from the table brings the game in a few lines and a photograph of the board */
+    const shot = 'data:image/jpeg;base64,' + Buffer.from('not really a jpeg').toString('base64');
+    ada.send({ t: 'feedback', rid: 30, page: '/game', kind: 'bug', text: 'The barge sails backwards.', details: 'era: canal · round: 3', shot });
     await ada.until('the post', () => letters.get('owner@brass.works')?.text.includes('barge') === true);
     expect(letters.get('owner@brass.works')?.subject).toContain('a bug from Ada');
     await ada.until('the book', () => {
@@ -503,6 +505,13 @@ describe('a table over the wire', () => {
     const page = await fetch(`http://127.0.0.1:${server.port}/feedback`).then((r) => r.text());
     expect(page).toContain('## Bug — Ada');
     expect(page).toContain('The barge sails backwards.');
+    expect(page).toContain('era: canal · round: 3');
+    const id = /board: \S*\/feedback\/(f-[0-9a-f]+)\.jpg/.exec(page)?.[1];
+    expect(id).toBeTruthy();
+    const picture = await fetch(`http://127.0.0.1:${server.port}/feedback/${id}.jpg`);
+    expect(picture.status).toBe(200);
+    expect(picture.headers.get('content-type')).toBe('image/jpeg');
+    expect(Buffer.from(await picture.arrayBuffer()).toString()).toBe('not really a jpeg');
     /* five notes an hour, no more */
     for (let i = 0; i < 5; i++) ada.send({ t: 'feedback', rid: 31 + i, page: '/game', kind: 'idea', text: `Idea ${i}` });
     await ada.until('the box to be full', () => ada.rejected.includes('refused'));

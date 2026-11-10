@@ -274,8 +274,19 @@ export interface Serving {
 }
 
 /** one idea or bug as it is written in the book, the page and the post */
-const noteText = (n: { name: string; page: string; kind: string; text: string; createdAt: number }): string =>
-  [`## ${n.kind === 'bug' ? 'Bug' : 'Idea'} — ${n.name} · ${new Date(n.createdAt).toISOString().slice(0, 16).replace('T', ' ')} · ${n.page}`, '', n.text, ''].join('\n');
+const noteText = (n: { id?: string; name: string; page: string; kind: string; text: string; createdAt: number; details?: string | null; shot?: boolean }, shotUrl = ''): string =>
+  [
+    `## ${n.kind === 'bug' ? 'Bug' : 'Idea'} — ${n.name} · ${new Date(n.createdAt).toISOString().slice(0, 16).replace('T', ' ')} · ${n.page}`,
+    '',
+    n.text,
+    ...(n.details ? ['', '```', n.details, '```'] : []),
+    ...(n.shot && n.id ? [`board: ${shotUrl}/feedback/${n.id}.jpg`] : []),
+    '',
+  ].join('\n');
+/** what a bug may bring from the table, at most: the game in a few lines, a small photograph */
+const MAX_DETAILS = 6000;
+const MAX_SHOT = 600_000;
+const SHOT_DATA = /^data:image\/jpeg;base64,[A-Za-z0-9+/]+=*$/;
 
 /** a name as the register folds it, to count the tries on it */
 const foldName = (name: string): string => name.trim().toLowerCase().replace(/\s+/g, ' ');
@@ -308,7 +319,8 @@ export function serve(options: ServeOptions = {}): Promise<Serving> {
   const inAlpha = (a: { email: string | null; verified: boolean; alpha: boolean }): boolean => alphaOpen || a.alpha || isAdmin(a);
   const me = (a: Account): Me => ({ id: a.id, name: a.name, email: a.email, verified: a.verified, motto: a.motto, favoriteColor: a.favoriteColor, head: a.head, createdAt: a.createdAt, newsletter: a.newsletter, guest: a.guest, alpha: inAlpha(a), ...(isAdmin(a) ? { admin: true } : {}) });
   const waitlist = new Waitlist(file);
-  const waitLetter = waitLetters(options.appUrl ?? process.env.APP_URL ?? 'http://localhost:3000', options.officeUrl ?? process.env.OFFICE_URL ?? '');
+  const officeUrl = (options.officeUrl ?? process.env.OFFICE_URL ?? '').replace(/\/+$/, '');
+  const waitLetter = waitLetters(options.appUrl ?? process.env.APP_URL ?? 'http://localhost:3000', officeUrl);
   const mailCap = options.mailCap ?? (Number.parseInt(process.env.MAIL_DAILY_CAP ?? '', 10) || MAIL_DAILY_CAP);
   const entriesByIp = new Map<string, Bucket>();
   const locate = options.locate ?? locateFromEnv();
@@ -470,7 +482,22 @@ export function serve(options: ServeOptions = {}): Promise<Serving> {
       }
       headed(res, 200, 'text/plain; charset=utf-8');
       const notes = store.feedbackList();
-      res.end(notes.length ? notes.map((n) => noteText(n)).join('\n') : 'No idea yet.\n');
+      res.end(notes.length ? notes.map((n) => noteText(n, officeUrl)).join('\n') : 'No idea yet.\n');
+      return;
+    }
+    /* the photograph a bug came with, by the note's id — the same door as the book */
+    const shotAsked = /^\/feedback\/(f-[0-9a-f]+)\.jpg$/.exec(url.pathname);
+    if (shotAsked) {
+      const shown = own || (feedbackToken !== '' && sameToken(url.searchParams.get('token') ?? '', feedbackToken));
+      const data = shown ? store.feedbackShot(shotAsked[1]) : null;
+      const m = data && /^data:(image\/jpeg);base64,(.+)$/.exec(data);
+      if (!m) {
+        headed(res, 404, 'text/plain');
+        res.end('Not found\n');
+        return;
+      }
+      res.writeHead(200, { 'content-type': m[1], 'cache-control': 'private, max-age=600' });
+      res.end(Buffer.from(m[2], 'base64'));
       return;
     }
     headed(res, 200, 'text/plain');
@@ -1157,11 +1184,13 @@ export function serve(options: ServeOptions = {}): Promise<Serving> {
           send(c, { t: 'refused', rid: m.rid, error: 'refused' });
           return;
         }
-        const note = store.feedback(who.id, m.page, m.kind, m.text);
-        console.log(`feedback (${note.kind}) from ${who.name} on ${note.page}: ${note.text.slice(0, 200)}`);
+        const details = m.kind === 'bug' && typeof m.details === 'string' && m.details.trim() ? m.details.slice(0, MAX_DETAILS) : null;
+        const shot = m.kind === 'bug' && typeof m.shot === 'string' && m.shot.length <= MAX_SHOT && SHOT_DATA.test(m.shot) ? m.shot : null;
+        const note = store.feedback(who.id, m.page, m.kind, m.text, details, shot);
+        console.log(`feedback (${note.kind}) from ${who.name} on ${note.page}: ${note.text.slice(0, 200)}${shot ? ' [board]' : ''}`);
         send(c, { t: 'done', rid: m.rid });
         /* the book and the post follow; neither holds the player up */
-        const text = noteText({ ...note, name: who.name });
+        const text = noteText({ ...note, name: who.name }, officeUrl);
         if (feedbackFile) void appendFile(feedbackFile, text + '\n').catch((e) => console.error(`feedback book: ${e}`));
         if (feedbackTo) void post.send({ to: feedbackTo, subject: `Blackrail — ${note.kind === 'bug' ? 'a bug' : 'an idea'} from ${who.name}`, text }).catch((e) => console.error(`feedback post: ${e}`));
         return;

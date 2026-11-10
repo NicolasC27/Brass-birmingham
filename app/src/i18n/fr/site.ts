@@ -251,6 +251,8 @@ const site: typeof enSite = {
     hintNone: 'Aucun serveur ne tient la boîte à idées ici, et cette version ne connaît aucune adresse où écrire.',
     send: 'Envoyer',
     mail: 'Envoyer par e-mail',
+    shotAttach: 'Joindre la table',
+    shotNote: 'une photographie de votre plateau tel qu’il est à l’écran et la partie en quelques lignes (manche, derniers coups, sièges) partent avec le rapport, pour qu’on voie ce qui cloche.',
     sent: 'Bien reçu — merci.',
     failed: 'La maison n’a pas répondu. Réessayez dans un instant.',
   },

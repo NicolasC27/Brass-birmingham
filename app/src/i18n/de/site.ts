@@ -251,6 +251,8 @@ const site: typeof enSite = {
     hintNone: 'Kein Server führt hier den Ideenkasten, und diese Version kennt keine Adresse, an die sie schreiben könnte.',
     send: 'Senden',
     mail: 'Per E-Mail senden',
+    shotAttach: 'Den Tisch beilegen',
+    shotNote: 'ein Foto Ihres Bretts, wie es auf dem Bildschirm steht, und die Partie in wenigen Zeilen (Runde, letzte Züge, Plätze) gehen mit dem Bericht, damit man sieht, was nicht stimmt.',
     sent: 'Gut angekommen — danke.',
     failed: 'Das Haus hat nicht geantwortet. Versuchen Sie es gleich noch einmal.',
   },

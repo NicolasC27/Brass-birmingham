@@ -1,9 +1,12 @@
 import { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useLocation } from 'react-router';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Bug, Lightbulb, X } from 'lucide-react';
 import { isOnline } from '@/online/lobby';
 import { sendFeedback, useSession } from '@/online/session';
+import { gameDetails } from '@/game/bugDetails';
+import { boardShot } from '@/gl/snapshot';
 import { useT } from '@/i18n';
 import { cn } from '@/lib/utils';
 
@@ -37,6 +40,10 @@ export function FeedbackDialog({ open, onClose }: { open: boolean; onClose: () =
   const [kind, setKind] = useState<'idea' | 'bug'>('idea');
   const [text, setText] = useState('');
   const [state, setState] = useState<'idle' | 'sent' | 'failed'>('idle');
+  /* a bug written at a table: the board and the game go with it, said so first */
+  const [attach, setAttach] = useState(true);
+  const atTable = pathname === '/game' || pathname.startsWith('/game/');
+  const withTable = kind === 'bug' && atTable;
   const canSend = isOnline && !!session;
 
   useEffect(() => {
@@ -49,7 +56,8 @@ export function FeedbackDialog({ open, onClose }: { open: boolean; onClose: () =
   const send = async () => {
     if (!text.trim()) return;
     try {
-      await sendFeedback(pathname, kind, text);
+      const extra = withTable && attach ? { details: gameDetails(), shot: await boardShot() } : {};
+      await sendFeedback(pathname, kind, text, extra);
       setState('sent');
       setText('');
     } catch {
@@ -58,7 +66,9 @@ export function FeedbackDialog({ open, onClose }: { open: boolean; onClose: () =
   };
   const mailUrl = `mailto:${MAIL_TO}?subject=${encodeURIComponent(`Blackrail — ${kind === 'bug' ? 'bug' : 'idea'}`)}&body=${encodeURIComponent(`${text}\n\n(page: ${pathname})`)}`;
 
-  return (
+  /* on the body, not in the page: the table's frame paints within itself,
+     and a sheet laid inside it would be cut to the tools' column */
+  return createPortal(
     <AnimatePresence>
       {open && (
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[95] flex items-center justify-center bg-coal-950/70 p-4 backdrop-blur-sm" onPointerDown={(e) => e.target === e.currentTarget && onClose()}>
@@ -100,6 +110,14 @@ export function FeedbackDialog({ open, onClose }: { open: boolean; onClose: () =
                 className="mt-3 w-full resize-y rounded-md border border-brass-700/60 bg-coal-950/70 px-3 py-2 font-serif text-[14px] leading-relaxed text-cream-100 placeholder:text-cream-100/30 focus:border-brass-400 focus:outline-none"
               />
               <p className="mt-1.5 font-sans text-[10.5px] text-cream-100/45">{t(canSend ? 'site.feedback.hintOnline' : isOnline ? 'site.feedback.hintSignIn' : MAIL_TO ? 'site.feedback.hintMail' : 'site.feedback.hintNone')}</p>
+              {withTable && canSend && (
+                <label className="mt-2 flex items-start gap-2 font-sans text-[11.5px] leading-snug text-cream-100/70">
+                  <input type="checkbox" checked={attach} onChange={(e) => setAttach(e.target.checked)} className="mt-[2px] accent-brass-400" />
+                  <span>
+                    <span className="font-semibold text-cream-100/90">{t('site.feedback.shotAttach')}</span> — {t('site.feedback.shotNote')}
+                  </span>
+                </label>
+              )}
               {state === 'sent' && <p className="mt-2 font-sans text-[12.5px] font-semibold text-bottle-600 brightness-150">{t('site.feedback.sent')}</p>}
               {state === 'failed' && <p className="mt-2 font-sans text-[12.5px] font-semibold text-rust-500 brightness-150">{t('site.feedback.failed')}</p>}
               <div className="mt-4 flex flex-wrap items-center gap-3">
@@ -119,6 +137,7 @@ export function FeedbackDialog({ open, onClose }: { open: boolean; onClose: () =
           </motion.div>
         </motion.div>
       )}
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body,
   );
 }

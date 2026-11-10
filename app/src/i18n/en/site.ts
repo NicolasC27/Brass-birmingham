@@ -249,6 +249,8 @@ const site = {
     hintNone: 'No server holds the suggestion box here, and this build knows no address to write to.',
     send: 'Send',
     mail: 'Send by e-mail',
+    shotAttach: 'Attach the table',
+    shotNote: 'a photograph of your board as it stands on screen and the game in a few lines (round, last moves, seats) go with the report, so what went wrong can be seen.',
     sent: 'Received — thank you.',
     failed: 'The house did not answer. Try again in a moment.',
   },

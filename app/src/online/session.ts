@@ -224,8 +224,8 @@ export async function updateProfile(patch: { motto?: string; favoriteColor?: Pla
 
 
 /** an idea or a bug, to the house */
-export async function sendFeedback(page: string, kind: 'idea' | 'bug', text: string): Promise<void> {
-  await wire().ask((rid) => ({ t: 'feedback', rid, page, kind, text }));
+export async function sendFeedback(page: string, kind: 'idea' | 'bug', text: string, extra: { details?: string | null; shot?: string | null } = {}): Promise<void> {
+  await wire().ask((rid) => ({ t: 'feedback', rid, page, kind, text, ...(extra.details ? { details: extra.details } : {}), ...(extra.shot ? { shot: extra.shot } : {}) }));
 }
 
 /** ask a player by name to be friends — or accept them */

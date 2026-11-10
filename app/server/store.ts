@@ -48,6 +48,9 @@ function seasonStart(id: string): number {
 
 /** an idea or a bug in the suggestion box */
 export interface Note {
+  /** a bug from a table: the game in a few lines, and whether a photograph of the board came with it */
+  details?: string | null;
+  shot?: boolean;
   id: string;
   accountId: string;
   page: string;
@@ -310,6 +313,8 @@ const GROWTH: [table: string, column: string, ddl: string][] = [
   ['games', 'name', 'text'],
   ['games', 'ownerId', 'text'],
   ['games', 'brief', 'text'],
+  ['feedback', 'details', 'text'],
+  ['feedback', 'shot', 'text'],
   ['games', 'updatedAt', 'integer'],
   ['tables', 'ranked', 'integer not null default 0'],
   /* the guided game's second lesson: its trail says so */
@@ -1037,10 +1042,16 @@ export class Store {
     return r && r.until > now ? r.until : 0;
   }
 
-  feedback(accountId: string, page: string, kind: string, text: string): Note {
-    const note: Note = { id: 'f-' + randomBytes(6).toString('hex'), accountId, page: page.slice(0, 120), kind: kind === 'bug' ? 'bug' : 'idea', text: text.trim().slice(0, 4000), createdAt: Date.now() };
-    this.db.prepare('insert into feedback (id, accountId, page, kind, text, createdAt) values (?, ?, ?, ?, ?, ?)').run(note.id, note.accountId, note.page, note.kind, note.text, note.createdAt);
+  feedback(accountId: string, page: string, kind: string, text: string, details: string | null = null, shot: string | null = null): Note {
+    const note: Note = { id: 'f-' + randomBytes(6).toString('hex'), accountId, page: page.slice(0, 120), kind: kind === 'bug' ? 'bug' : 'idea', text: text.trim().slice(0, 4000), createdAt: Date.now(), details, shot: shot !== null };
+    this.db.prepare('insert into feedback (id, accountId, page, kind, text, createdAt, details, shot) values (?, ?, ?, ?, ?, ?, ?, ?)').run(note.id, note.accountId, note.page, note.kind, note.text, note.createdAt, details, shot);
     return note;
+  }
+
+  /** the photograph of the board a bug came with: a data URL, or none */
+  feedbackShot(id: string): string | null {
+    const r = this.db.prepare('select shot from feedback where id = ?').get(id) as { shot: string | null } | undefined;
+    return r?.shot ?? null;
   }
 
   /** how many notes this account has posted since `since` */
@@ -1051,8 +1062,9 @@ export class Store {
   /** the whole suggestion box, newest first, each note with its author's name */
   feedbackList(): (Note & { name: string })[] {
     return this.db
-      .prepare('select f.id, f.accountId, f.page, f.kind, f.text, f.createdAt, a.name from feedback f join accounts a on a.id = f.accountId order by f.createdAt desc')
-      .all() as unknown as (Note & { name: string })[];
+      .prepare('select f.id, f.accountId, f.page, f.kind, f.text, f.createdAt, f.details, (f.shot is not null) as shot, a.name from feedback f join accounts a on a.id = f.accountId order by f.createdAt desc')
+      .all()
+      .map((r) => ({ ...(r as unknown as Note & { name: string }), shot: (r as { shot: number }).shot === 1 })) as (Note & { name: string })[];
   }
 
   /* ----------------------------- tables ---------------------------- */

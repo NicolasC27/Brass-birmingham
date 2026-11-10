@@ -91,7 +91,8 @@ export type ClientMessage =
   /** what the lessons did at a guided table, a few events at a time, sent
       unasked: under the table's own random id, never the account's */
   | { t: 'guide.trail'; events: TrailEvent[] }
-  | { t: 'feedback'; rid: number; page: string; kind: 'idea' | 'bug'; text: string }
+  /** a bug from a table may carry the game in a few lines and a small photograph of the board (a JPEG data URL) */
+  | { t: 'feedback'; rid: number; page: string; kind: 'idea' | 'bug'; text: string; details?: string; shot?: string }
   /** the desk: my tables, my invitations, my past games */
   | { t: 'desk'; rid?: number }
   /** ask a player by name to be friends — or accept their asking */

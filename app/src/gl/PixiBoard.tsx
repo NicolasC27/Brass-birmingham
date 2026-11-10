@@ -33,6 +33,7 @@ import { freshFlips } from './living';
 import { cn } from '@/lib/utils';
 import type { StockStyle } from './paint';
 import { buildAmbiance } from './ambiance';
+import { offerBoardShot } from './snapshot';
 import { attachPhoto } from './photo';
 import { flooredScale } from './floor';
 import { isKey, typing } from '@/components/game/keybindings';
@@ -1696,6 +1697,8 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
       cleanups.push(subscribeFitReserve(() => cam.reclamp()));
       /* the photo mode borrows the stage, the scene and the camera (photo.ts) */
       cleanups.push(attachPhoto({ app: a, scene, cam, game: () => gameRef.current }));
+      /* a bug report may ask for the board as it stands: a small JPEG of the stage */
+      cleanups.push(offerBoardShot(() => a.renderer.extract.base64({ target: a.stage, format: 'jpg', quality: 0.6, resolution: Math.min(1, 1400 / Math.max(1, a.screen.width)) })));
     };
 
     void boot();
