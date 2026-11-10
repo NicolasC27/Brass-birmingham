@@ -43,6 +43,8 @@ rsync -az -e "${SSH[*]}" "$here/office-package.json" "$HOST:/srv/blackrail/offic
 rsync -az -e "${SSH[*]}" "$here/Caddyfile" "$here/blackrail-office.service" "$here/geo-update.sh" "$here/blackrail-geo.service" "$here/blackrail-geo.timer" "$HOST:/tmp/"
 "${SSH[@]}" "$HOST" 'set -e
   cd /srv/blackrail/office && npm install --omit=dev --no-audit --no-fund --loglevel=error
+  # a Caddyfile that does not read stops the deploy before it replaces the one serving
+  caddy validate --adapter caddyfile --config /tmp/Caddyfile >/dev/null 2>&1 || { caddy validate --adapter caddyfile --config /tmp/Caddyfile; exit 1; }
   sudo install -m 644 /tmp/Caddyfile /etc/caddy/Caddyfile
   sudo install -m 644 /tmp/blackrail-office.service /etc/systemd/system/blackrail-office.service
   sudo install -m 755 /tmp/geo-update.sh /usr/local/bin/blackrail-geo-update
