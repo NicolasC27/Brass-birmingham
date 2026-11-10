@@ -923,7 +923,7 @@ const platform = {
         {
           h: "Quién es responsable",
           p: [
-            "El responsable del tratamiento es el editor nombrado arriba. El sitio lo lleva una persona, no una empresa: no vende nada de usted, no muestra publicidad y no mide su audiencia, salvo con la medición anónima de la partida guiada, descrita más abajo.",
+            "El responsable del tratamiento es el editor nombrado arriba. El sitio lo lleva una persona, no una empresa: no vende nada de usted, no muestra publicidad y solo mide cómo se usan el sitio y el juego: sin cookies y sin vincular nada a su nombre, como se describe más abajo.",
           ],
         },
         {
@@ -931,9 +931,10 @@ const platform = {
           p: [
             "Su cuenta: el nombre, la dirección de correo, la contraseña (nunca en claro: un hash scrypt), la fecha de apertura, la fecha de aceptación de esta política y la dirección IP desde la que se abrió la cuenta. Es lo necesario para reconocerle y escribirle.",
             "Sus partidas: las jugadas, los resultados, la clasificación, los amigos y las invitaciones. Es el servicio mismo.",
-                  "En su navegador: el token de sesión, el tema y el idioma, en almacenamiento local; para la partida guiada, el número sacado al azar de la mesa en curso de cada lección, guardado junto a su código para saber qué se ha enviado ya, y su decisión de participar o no. Ninguna cookie, ningún rastreador publicitario, ninguna otra medición de audiencia.",
+                  "En su navegador: el token de sesión, el tema y el idioma, en almacenamiento local; para la partida guiada, el número sacado al azar de la mesa en curso de cada lección, guardado junto a su código para saber qué se ha enviado ya, y su decisión de participar o no. Ninguna cookie, ningún rastreador publicitario: la medición de uso descrita más abajo no escribe nada en su navegador.",
             "En la lista de espera del preestreno: la dirección de correo, el idioma de la página, el sitio del que llegó si se conoce, la fecha de inscripción y la de confirmación. La dirección IP de inscripción se guarda hasta la confirmación y luego se borra; solo se conserva el país que se deduce de ella, en nuestro propio servidor (base DB-IP). Es lo necesario para escribirle cuando abra el viaje de prueba.",
             "Durante la partida guiada, y solo entonces: cada lección mostrada, hecha, leída, saltada o dejada para más tarde, el desvío por el préstamo, la guía abandonada, la máquina dejada jugar sin esperar y, al final, la puntuación de los dos jugadores. Cada una de estas notas lleva la ronda, el número de acciones jugadas y los segundos transcurridos desde el inicio de la mesa, el tipo de pantalla (ordenador, tableta en horizontal, tableta en vertical o pantalla táctil pequeña), el idioma, la versión del sitio, el reparto, la lección (la primera o la segunda) y el día en que llega, nada más. Llevan un número sacado al azar para cada mesa guiada: ni su cuenta, ni su dirección IP, ni el código de la mesa se les adjuntan, el registro no guarda nada que las relacione con su cuenta y nunca se cotejan con sus partidas. El editor solo las lee en totales, lección por lección. Sirven para ver dónde se detienen los principiantes, para mejorar las lecciones, y se borran a los 180 días. Para que no se envíen, desmarque «Participar» en la página del Curso nocturno.",
+            "La medición de uso, confiada a PostHog: las páginas leídas (su dirección sin ningún código ni token), el sitio del que viene, el tipo de dispositivo, de navegador y de pantalla; en la mesa, para qué se usa la pantalla — las acciones empezadas, los paneles abiertos, los rechazos encontrados, los pasos de la guía; y, anotadas por nuestro servidor, sus partidas: su inicio, cada jugada que hace (su tipo y, para una construcción, la industria y la ciudad), las rondas alcanzadas, el final con su puesto y sus puntos, o el abandono. No se escribe nada en su navegador: PostHog cuenta a los visitantes mediante una huella de la dirección IP y del navegador, calculada con una clave que cambia cada día, de modo que a un visitante no se le sigue de un día para otro; la dirección IP en sí no se conserva. Sus partidas llevan allí una huella de su cuenta, calculada en nuestro servidor con una clave que nunca sale de él: PostHog no recibe ni su nombre, ni su dirección de correo, ni el código de una partida. El editor las lee en totales y recorridos, para ver cómo se juega y dónde pierde el juego a sus jugadores.",
             "No recogemos nada más. Ni nombre civil, ni dirección postal, ni medio de pago.",
           ],
         },
@@ -943,12 +944,14 @@ const platform = {
             "La cuenta y las partidas: la prestación del servicio que ha pedido. La conservación de la dirección de alta: la obligación legal de los alojadores (ley francesa para la confianza en la economía digital y su decreto de aplicación). La limitación de los intentos de conexión: nuestro interés legítimo en proteger el sitio y a sus socios.",
             "La lista de espera: su consentimiento, dado al confirmar la dirección y retirado en cualquier momento con el enlace de cada carta.",
             "La medición de la partida guiada: nuestro interés legítimo en mejorar las lecciones. Puede oponerse en cualquier momento desmarcando «Participar» en la página del Curso nocturno.",
+            "La medición de uso: nuestro interés legítimo en entender cómo se usan el sitio y el juego, para mejorarlos. Si su navegador pide no ser rastreado («Do Not Track» o Global Privacy Control), el sitio no mide nada de lo que hace en él; para que sus partidas tampoco se midan, escriba al contacto indicado arriba.",
           ],
         },
         {
           h: "Quién más ve sus datos",
           p: [
                   "Resend (Estados Unidos) lleva las cartas del sitio: la verificación de la dirección, la nueva contraseña y las cartas de la lista de espera. Recibe su dirección de correo y su nombre.",
+            "PostHog (PostHog Inc., datos alojados en la Unión Europea, en Fráncfort) recibe la medición de uso descrita más arriba: nunca su nombre, su dirección de correo ni el código de una partida.",
             "Las fuentes tipográficas se cargan desde Google Fonts: su navegador transmite entonces su dirección IP a Google.",
             "El servidor Discord del club es un servicio de Discord Inc.: lo que escriba allí depende de su propia política de privacidad y nunca entra en el registro del sitio. Nadie más tiene acceso al registro.",
           ],
@@ -961,6 +964,7 @@ const platform = {
             "Tras el cierre de una cuenta, el nombre y la dirección de correo se apartan durante cinco años, fuera de todo uso, porque la ley lo exige a los alojadores; después se borran.",
             "Una dirección de la lista de espera nunca confirmada, siete días. Una dirección confirmada, hasta que salga de la lista — un clic, en cada carta — o como mucho seis meses después de la apertura del juego.",
             "Las notas de la partida guiada, 180 días.",
+            "La medición de uso, un año en PostHog.",
           ],
         },
         {

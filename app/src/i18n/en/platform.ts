@@ -923,7 +923,7 @@ const platform = {
         {
           h: "Who is responsible",
           p: [
-            "The data controller is the publisher named above. The site is run by a person, not a company: it sells nothing of you, shows no advertising and measures no audience, save the anonymous measurement of the guided game described below.",
+            "The data controller is the publisher named above. The site is run by a person, not a company: it sells nothing of you, shows no advertising, and measures only how the site and the game are used: without cookies, without linking anything to your name, as described below.",
           ],
         },
         {
@@ -931,9 +931,10 @@ const platform = {
           p: [
             "Your account: the name, the e-mail address, the password (never in the clear: a scrypt hash), the opening date, the date this policy was accepted, and the IP address the account was opened from. That is what it takes to recognise you and write to you.",
             "Your games: the moves, the results, the ranking, friends and invitations. That is the service itself.",
-                  "In your browser: the session token, the theme and the language, in local storage; for the guided game, the number drawn at random for each lesson’s table in progress, kept beside its code to know what has already been sent, and your choice to take part or not. No cookie, no advertising tracker, no other audience measurement.",
+                  "In your browser: the session token, the theme and the language, in local storage; for the guided game, the number drawn at random for each lesson’s table in progress, kept beside its code to know what has already been sent, and your choice to take part or not. No cookie, no advertising tracker: the usage measurement described below writes nothing in your browser.",
             "On the preview’s waiting list: the e-mail address, the page’s language, the site you came from when it is known, the date you joined and the date you confirmed. The address you joined from (IP) is kept until you confirm, then erased; only the country read from it, on our own server (DB-IP database), is kept. This is what it takes to write to you when the trial run opens.",
             "During the guided game, and only then: each lesson shown, done, read, skipped or put off until later, the detour to the loan, the guide left, the machine let play on without waiting and, at the end, both players’ scores. Each of these notes carries the round, the number of actions played and the seconds since the table began, the kind of screen (computer, tablet held landscape, tablet held portrait or small touch screen), the language, the site’s version, the deal, the lesson (the first or the second) and the day it arrives, nothing more. They carry a number drawn at random for each guided table: neither your account, nor your IP address, nor the table’s code is attached to them, the register keeps nothing that links them to your account, and they are never matched against your games. The publisher reads them only as totals, lesson by lesson. They show where beginners stop, so the lessons can be improved, and are erased after 180 days. To keep them from being sent, untick “Take part” on the Evening course page.",
+            "The usage measurement, entrusted to PostHog: the pages read (their address stripped of any code or token), the site you came from, the kind of device, browser and screen; at the table, what the screen is used for — the actions begun, the panels opened, the refusals met, the guide’s steps; and, noted by our server, your games: their start, each move you play (its kind and, for a build, the industry and the town), the rounds reached, the end with your place and your points, or the abandonment. Nothing is written in your browser: PostHog counts visitors by a fingerprint of the IP address and the browser, computed with a key it changes every day, so that a visitor is not followed from one day to the next; the IP address itself is not kept. Your games carry a fingerprint of your account, computed on our server with a key that never leaves it: PostHog receives neither your name, nor your e-mail address, nor a game’s code. The publisher reads them as totals and paths, to see how the game is played and where it loses its players.",
             "We collect nothing else. No legal name, no postal address, no means of payment.",
           ],
         },
@@ -943,12 +944,14 @@ const platform = {
             "The account and the games: performance of the service you asked for. Keeping the sign-up address: the legal obligation on hosts (the French law on confidence in the digital economy and its implementing decree). Limiting sign-in attempts: our legitimate interest in protecting the site and its members.",
             "The waiting list: your consent, given by confirming the address, and withdrawn at any time through the link in every letter.",
             "The guided game’s measurement: our legitimate interest in improving the lessons. You may object to it at any time by unticking “Take part” on the Evening course page.",
+            "The usage measurement: our legitimate interest in understanding how the site and the game are used, to improve them. If your browser asks not to be tracked (“Do Not Track” or Global Privacy Control), the site measures nothing of what you do there; for your games to stop being measured as well, write to the contact above.",
           ],
         },
         {
           h: "Who else sees your data",
           p: [
                   "Resend (United States) carries the site’s letters: address verification, password reset and the waiting list’s letters. It receives your e-mail address and your name.",
+            "PostHog (PostHog Inc., data hosted in the European Union, in Frankfurt) receives the usage measurement described above: never your name, your e-mail address or a game’s code.",
             "Fonts are loaded from Google Fonts: your browser then sends your IP address to Google.",
             "The club’s Discord server is a service of Discord Inc.: what you write there falls under its own privacy policy and never enters the site’s register. Nobody else has access to the register.",
           ],
@@ -961,6 +964,7 @@ const platform = {
             "After an account is closed, the name and e-mail address are set aside for five years, out of any use, because the law asks it of hosts; then they are erased.",
             "An address on the waiting list never confirmed, seven days. A confirmed address, until you leave the list — one click, in every letter — or at the latest six months after the game opens.",
             "The guided game’s notes, 180 days.",
+            "The usage measurement, one year at PostHog.",
           ],
         },
         {

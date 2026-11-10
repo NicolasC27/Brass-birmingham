@@ -923,7 +923,7 @@ const platform = {
         {
           h: "Qui est responsable",
           p: [
-            "Le responsable du traitement est l’éditeur nommé ci-dessus. Le site est tenu par une personne, pas par une société : il ne vend rien de vous, n’affiche aucune publicité et ne mesure pas votre audience, hormis la mesure anonyme de la partie guidée, décrite plus bas.",
+            "Le responsable du traitement est l’éditeur nommé ci-dessus. Le site est tenu par une personne, pas par une société : il ne vend rien de vous, n’affiche aucune publicité, et ne mesure que la façon dont le site et le jeu sont utilisés : sans cookie, sans rien relier à votre nom, comme décrit plus bas.",
           ],
         },
         {
@@ -931,9 +931,10 @@ const platform = {
           p: [
             "Votre compte : le pseudo, l’adresse e-mail, le mot de passe (jamais en clair : une empreinte scrypt), la date d’ouverture, la date d’acceptation de cette politique et l’adresse IP d’où le compte a été ouvert. C’est ce qu’il faut pour vous reconnaître et vous écrire.",
             "Vos parties : les coups joués, les résultats, le classement, les amis et les invitations. C’est le service lui-même.",
-                  "Dans votre navigateur : le jeton de session, le thème et la langue, en stockage local ; pour la partie guidée, le numéro tiré au hasard de la table en cours de chaque leçon, gardé à côté de son code pour savoir ce qui en a déjà été envoyé, et votre choix d’y participer ou non. Aucun cookie, aucun traceur publicitaire, aucune autre mesure d’audience.",
+                  "Dans votre navigateur : le jeton de session, le thème et la langue, en stockage local ; pour la partie guidée, le numéro tiré au hasard de la table en cours de chaque leçon, gardé à côté de son code pour savoir ce qui en a déjà été envoyé, et votre choix d’y participer ou non. Aucun cookie, aucun traceur publicitaire : la mesure d’usage décrite plus bas n’écrit rien dans votre navigateur.",
             "Sur la liste d’attente de l’avant-première : l’adresse e-mail, la langue de la page, le site d’où vous êtes venu s’il est connu, la date d’inscription et celle de la confirmation. L’adresse IP d’inscription est gardée jusqu’à la confirmation, puis effacée ; seul le pays qu’on en déduit, sur notre propre serveur (base DB-IP), est conservé. C’est ce qu’il faut pour vous écrire quand le voyage d’essai ouvre.",
             "Pendant la partie guidée, et elle seule : chaque leçon montrée, faite, lue, passée ou remise à plus tard, le détour par l’emprunt, le guide quitté, la machine laissée jouer sans attendre et, à la fin, le score des deux joueurs. Chacune de ces notes porte la manche, le nombre d’actions jouées et les secondes écoulées depuis le début de la table, le genre d’écran (ordinateur, tablette à l’horizontale, tablette à la verticale ou petit écran tactile), la langue, la version du site, la donne, la leçon (la première ou la seconde) et le jour où elle arrive, rien de plus. Elles portent un numéro tiré au hasard pour chaque table guidée : ni votre compte, ni votre adresse IP, ni le code de la table n’y sont joints, le registre ne garde rien qui les relie à votre compte, et elles ne sont jamais rapprochées de vos parties. L’éditeur ne les lit qu’en totaux, leçon par leçon. Elles servent à voir où les débutants s’arrêtent, pour améliorer les leçons, et sont effacées au bout de 180 jours. Pour qu’elles ne partent pas, décochez « Participer » sur la page du Cours du soir.",
+            "La mesure d’usage, confiée à PostHog : les pages lues (leur adresse privée de tout code et de tout jeton), le site d’où vous venez, le genre d’appareil, de navigateur et d’écran ; à la table, ce à quoi sert l’écran — les actions commencées, les panneaux ouverts, les refus rencontrés, les étapes du guide ; et, notées par notre serveur, vos parties : leur début, chaque coup que vous jouez (sa nature et, pour une construction, l’industrie et la ville), les manches atteintes, la fin avec votre place et vos points, ou l’abandon. Rien n’est écrit dans votre navigateur : PostHog compte les visiteurs par une empreinte de l’adresse IP et du navigateur, calculée avec une clé qu’il change chaque jour, de sorte qu’un visiteur n’est pas suivi d’un jour à l’autre ; l’adresse IP elle-même n’est pas conservée. Vos parties y portent une empreinte de votre compte, calculée sur notre serveur avec une clé qui n’en sort pas : PostHog ne reçoit ni votre pseudo, ni votre adresse e-mail, ni le code d’une partie. L’éditeur les lit en totaux et en parcours, pour voir comment le jeu est joué et où il perd ses joueurs.",
             "Nous ne collectons rien d’autre. Pas de nom civil, pas d’adresse postale, pas de moyen de paiement.",
           ],
         },
@@ -943,12 +944,14 @@ const platform = {
             "Le compte et les parties : l’exécution du service que vous avez demandé. La conservation de l’adresse d’inscription : l’obligation légale faite aux hébergeurs (loi pour la confiance dans l’économie numérique et son décret d’application). La limitation des tentatives de connexion : notre intérêt légitime à protéger le site et ses membres.",
             "La liste d’attente : votre consentement, donné en confirmant l’adresse, et retiré à tout moment par le lien présent dans chaque lettre.",
             "La mesure de la partie guidée : notre intérêt légitime à améliorer les leçons. Vous pouvez vous y opposer à tout moment en décochant « Participer » sur la page du Cours du soir.",
+            "La mesure d’usage : notre intérêt légitime à comprendre comment le site et le jeu sont utilisés, pour les améliorer. Si votre navigateur demande à ne pas être suivi (« Do Not Track » ou Global Privacy Control), le site ne mesure rien de ce que vous y faites ; pour que vos parties ne soient plus mesurées non plus, écrivez au contact ci-dessus.",
           ],
         },
         {
           h: "Qui d’autre voit vos données",
           p: [
                   "Resend (États-Unis) achemine les lettres du site : la vérification de l’adresse, le nouveau mot de passe et les lettres de la liste d’attente. Il reçoit votre adresse e-mail et votre pseudo.",
+            "PostHog (PostHog Inc., données hébergées dans l’Union européenne, à Francfort) reçoit la mesure d’usage décrite plus haut : jamais votre pseudo, votre adresse e-mail ni le code d’une partie.",
             "Les polices de caractères sont chargées depuis Google Fonts : votre navigateur transmet alors votre adresse IP à Google.",
             "Le serveur Discord du club est un service de Discord Inc. : ce que vous y écrivez relève de sa propre politique de confidentialité, et n’entre pas dans le registre du site. Personne d’autre n’a accès au registre.",
           ],
@@ -961,6 +964,7 @@ const platform = {
             "Après la fermeture d’un compte, le pseudo et l’adresse e-mail sont mis à part pendant cinq ans, hors de tout usage, parce que la loi le demande aux hébergeurs ; puis ils sont effacés.",
             "Une adresse de la liste d’attente jamais confirmée, sept jours. Une adresse confirmée, jusqu’à ce que vous quittiez la liste — un clic, dans chaque lettre — ou au plus tard six mois après l’ouverture du jeu.",
             "Les notes de la partie guidée, 180 jours.",
+            "La mesure d’usage, un an chez PostHog.",
           ],
         },
         {
