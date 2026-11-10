@@ -290,7 +290,7 @@ const platform: typeof enPlatform = {
     eyebrow: "Frachtbrief Nr. 7",
     title: "Einen Zug chartern",
     tagline: 'Stellen Sie die Maschine ein, laden Sie Ihre Spieler ein, legen Sie los.',
-    kinds: { solo: 'Solo', hotseat: 'Zu mehreren hier', club: 'Im Club' },
+    kinds: { solo: 'Lokal', hotseat: 'Koop (lokal)', club: 'Mehrspieler' },
     identity: {
       heading: 'Identität des Tisches',
       nameLabel: 'Name des Tisches',
