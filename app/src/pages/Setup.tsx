@@ -72,7 +72,10 @@ export default function Setup() {
   const [fault, setFault] = useState<string | null>(null);
   const [seats, setSeats] = useState<Seat[]>(() => {
     const stored = loadStoredSetup();
-    return stored ? seatsFromStored(stored) : defaultSeats(urlMode);
+    const kept = stored ? seatsFromStored(stored) : defaultSeats(urlMode);
+    /* a local table against the machines seats no other human: one kept
+       from an earlier sheet is recast as a machine */
+    return urlMode === "solo" ? kept.map((s, i) => (i > 0 && s.type === "human" ? openSeat(s, "bot", kept) : s)) : kept;
   });
   const [options, setOptions] = useState<SetupOptions>(() => {
     return loadStoredSetup()?.options ?? DEFAULT_OPTIONS;
@@ -289,6 +292,7 @@ export default function Setup() {
                   <SeatRow
                     key={i}
                     compact
+                    botsOnly={mode === "solo"}
                     seat={seat}
                     index={i}
                     isHead={i === 0}

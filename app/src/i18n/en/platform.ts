@@ -288,7 +288,7 @@ const platform = {
     eyebrow: "Waybill no. 7",
     title: "Charter a train",
     tagline: 'Set the machine, invite your players, start.',
-    kinds: { solo: 'Local', hotseat: 'Co-op (local)', club: 'Multiplayer' },
+    kinds: { solo: 'Local', hotseat: 'Same screen', club: 'Multiplayer' },
     identity: {
       heading: 'Table identity',
       nameLabel: 'Table name',

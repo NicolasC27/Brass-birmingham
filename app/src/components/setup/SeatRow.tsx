@@ -32,10 +32,13 @@ export default function SeatRow({
   onColorChange,
   onPersonaChange,
   compact = false,
+  botsOnly = false,
 }: {
   seat: Seat;
   /** the one-screen sheet: tighter rows, the machine's word left to its tip */
   compact?: boolean;
+  /** a local table against the machines: the other seats are theirs alone */
+  botsOnly?: boolean;
   index: number;
   isHead: boolean;
   canClose: boolean;
@@ -141,11 +144,7 @@ export default function SeatRow({
             ariaLabel={t("setup.seat.typeAria", { n: index + 1 })}
             value={seat.type}
             onChange={onTypeChange}
-            options={
-              canClose
-                ? TYPE_OPTIONS
-                : TYPE_OPTIONS.map((o) => ({ ...o, disabled: o.value === "closed" }))
-            }
+            options={(botsOnly ? TYPE_OPTIONS.filter((o) => o.value !== "human") : TYPE_OPTIONS).map((o) => (canClose || o.value !== "closed" ? o : { ...o, disabled: true }))}
           />
         )}
       </div>
