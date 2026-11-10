@@ -331,7 +331,7 @@ let state: BoardOptions = {
   tileArt: {},
   matOrder: read('matOrder', [...MAT_ORDER_DEFAULT]),
   /* the empty slots print in black ink by default: the sepia plate stays a choice */
-  slotArt: read('slotArt', 'mono'),
+  slotArt: read('slotArt', 'engraved'),
   ground: sanitizeGround(read('ground', 'midlands')),
   cardSet: read('cardSet', 'plain') === 'frost' ? 'frost' : 'plain',
   /* on by default: oxblood and verdigris sit too close under deuteranopia

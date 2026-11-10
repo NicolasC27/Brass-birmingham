@@ -17,8 +17,8 @@ describe('an owner told without colour', () => {
     expect(getBoardOptions().colorBlind).toBe(false);
   });
 
-  it('prints the empty slots in black ink by default', () => {
-    expect(getBoardOptions().slotArt).toBe('mono');
+  it('paints the empty slots in colour by default', () => {
+    expect(getBoardOptions().slotArt).toBe('engraved');
   });
 });
 

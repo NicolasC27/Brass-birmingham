@@ -152,7 +152,8 @@ export function useTableSounds(): void {
   /* the townsfolk: what stirred the towns lately, and the line said next,
      picked from the game as it stands when its time comes */
   const stirs = useRef<Stir[]>([]);
-  const talk = useGame((s) => voicesWanted(s.game));
+  /* …but not at a guided table: the guide speaks there, and nobody over it */
+  const talk = useGame((s) => (s.tutorial ? null : voicesWanted(s.game)));
   useEffect(() => {
     const source: VoiceSource = {
       pick: (chance, last) => {
