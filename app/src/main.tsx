@@ -31,8 +31,10 @@ import './index.css'
 import App from './App.tsx'
 import { installDesktopZoom } from './desktop/zoom'
 import { installFaultReports } from './platform/errors'
+import { installMeasures } from './platform/measure'
 
 installFaultReports()
+installMeasures()
 
 void installDesktopZoom()
 

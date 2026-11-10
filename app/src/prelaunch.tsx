@@ -20,6 +20,7 @@ import '@fontsource/spectral/400-italic.css'
 import '@fontsource/im-fell-english-sc/400.css'
 import './index.css'
 import LandingRoutes from './landing/LandingRoutes'
+import { installMeasures } from './platform/measure'
 
 /* ------------------------------------------------------------------ */
 /* The preview's own entry. Built with VITE_PRELAUNCH=1, it is the      */
@@ -27,6 +28,8 @@ import LandingRoutes from './landing/LandingRoutes'
 /* a two-round taste of the game (/demo, fetched on a click), the law   */
 /* and the direction's desk. No other room of the site is reachable.    */
 /* ------------------------------------------------------------------ */
+
+installMeasures()
 
 createRoot(document.getElementById('root')!).render(
   <BrowserRouter>

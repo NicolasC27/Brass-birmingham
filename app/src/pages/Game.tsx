@@ -64,6 +64,7 @@ import { topLayer } from '@/components/game/layers';
 import type { Resource } from '@/game/types';
 import { useT } from '@/i18n';
 import { cn } from '@/lib/utils';
+import { trackTable } from '@/platform/measure';
 
 /* WebGL board renderer — lazy so pixi.js stays out of the main bundle */
 const PixiBoard = lazy(() => import('@/gl/PixiBoard'));
@@ -738,7 +739,11 @@ export default function Game({ demo = false }: { demo?: boolean } = {}) {
           the full tray hangs right under it when asked, whole, no scrolling,
           and the banner never moves for it (it keeps clear of the tray's
           column by itself) */}
-      {!surveying && <MarketPill market={(review?.state ?? game).market} consume={consumePreview ?? {}} top={insets.top} bottom={review ? insets.bottom + 8 : undefined} left={review ? insets.left : undefined} open={marketOpen} onToggle={() => setMarketOpen((o) => !o)} />}
+      {!surveying && <MarketPill market={(review?.state ?? game).market} consume={consumePreview ?? {}} top={insets.top} bottom={review ? insets.bottom + 8 : undefined} left={review ? insets.left : undefined} open={marketOpen} onToggle={() => {
+        /* the tray is the page's, not the store's: its opening is measured here */
+        if (!marketOpen) trackTable('panel opened', { panel: 'market' });
+        setMarketOpen((o) => !o);
+      }} />}
       <AnimatePresence initial={false}>
         {marketOpen && (
           <motion.aside
