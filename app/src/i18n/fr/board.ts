@@ -120,7 +120,7 @@ const fr: typeof enboard = {
     links: '{n} [n|liaison|liaisons]',
     pin: 'Épingler',
     unpin: 'Désépingler',
-    pinTip: 'Suivre cette ville : ce que les autres y font vous sera signalé',
+    pinTip: 'Suivre cette ville : ce que les autres y font vous sera signalé',
     unpinTip: 'Ne plus suivre cette ville',
     linksTip: 'Les liaisons déjà posées depuis cette ville, par propriétaire',
     level: 'Niveau {level}',

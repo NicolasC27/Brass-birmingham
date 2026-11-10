@@ -114,7 +114,7 @@ const landing: Dict['landing'] = {
   alpha: {
     signIn: 'Se connecter',
     signOut: 'Se déconnecter',
-    noAccess: 'Connecté comme {name}. L’alpha n’est pas encore ouverte à ce compte : la direction ouvre les portes une à une, et vous écrit quand c’est votre tour.',
+    noAccess: 'Connecté comme {name}. L’alpha n’est pas encore ouverte à ce compte : la direction ouvre les portes une à une, et vous écrit quand c’est votre tour.',
   },
   bar: 'Prendre mon billet',
   final: {
