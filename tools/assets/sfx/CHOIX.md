@@ -1072,3 +1072,18 @@ the piano's low octaves, a solo horn over held strings, the full
 orchestra rising. Both open on four seconds of silence, cut at 3.5 s,
 and run through without a hole (-15.2 and -17.9 LUFS, served at -20).
 They alternate with the first two on the frozen ground (`TUNES_FROST`).
+
+## The merchants' houses, quiet again (2026-11-10)
+
+The five recordings of the towns (house-warrington, -nottingham,
+-shrewsbury, -oxford, -gloucester: hooves, a hand bell, a winch…) and the
+brass bell over the door were both found too loud for a pointer passing
+over a merchant, on the frozen city as on the English model. They are
+withdrawn: the files are no longer served and process.py no longer makes
+them (the prompts leave generate.py too; the takes stay under raw/).
+
+What is heard now is made, not recorded: a knuckle on the counter's wood
+(`houseTouch` in sfx.ts) — a sine at about 260 Hz, a hair higher or lower
+for every house, dropping a little over 35 ms and gone in 120 ms, with
+25 ms of banded noise under it for the felt. Once as the pointer arrives,
+nothing while it rests, on the gestures' bus so the mix's level holds it.

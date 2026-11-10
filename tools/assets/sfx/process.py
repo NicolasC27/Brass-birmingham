@@ -17,7 +17,7 @@ Spends nothing: ffmpeg only.
                          stereo, rid of the model's hum (see dehum), the
                          rumble under it cut, a gentle compressor, run
                          seamlessly, holding the few loud moments; no limiter
-  houses, industries     as the gestures, rid of the hum where the take is a
+  industries             as the gestures, rid of the hum where the take is a
                          texture rather than a knock, levelled by loudness
   the canal's first tune a whole number of the tune's phrases cut out of the
                          take, its head folded over by the same place one
@@ -28,7 +28,7 @@ Spends nothing: ffmpeg only.
                          twice running heard once, where one is listed:
                          see spliced), rid of the hum, a short fade at each
                          end, levelled by a plain gain like the first; stereo
-  the rail's life        as the houses: a train somewhere off, now and then
+  the rail's life        a train somewhere off, now and then
   the canal's life       likewise: the working waterway, now and then
   the townsfolk          their lines (barks): the breath before and after
                          cut, the chest and the lips off, a wall across the
@@ -45,7 +45,6 @@ RAW = os.path.join(HERE, 'raw')
 OUT = os.path.join(ROOT, 'app', 'public', 'sfx')
 PEAK = -3.0
 FOLD = 3.0
-HOUSE_PEAK = -2.0
 # the sound model writes its audio in frames of 5 ms: every take carries a
 # faint buzz at exactly 200 Hz and each multiple of it (measured on
 # amb-canal-3 at 200.005, 400.002, 599.993 Hz, up to 6 kHz). Over a quiet
@@ -115,18 +114,6 @@ SHORT = {
     'ind-manufacturer': ('ind-manufacturer-2', (0.05, 0.55), 'equalizer=f=3500:t=o:w=1.5:g=-4,', PEAK, {'fade': 0.12, 'lufs': -20}),
     'ind-pottery': ('ind-pottery-1', (0.0, 0.8), 'highpass=f=60,', PEAK, {'fade': 0.25, 'lufs': -20}),
     'ind-brewery': ('ind-brewery-2', (0.0, 0.6), 'highpass=f=60,', PEAK, {'fade': 0.15, 'lufs': -20}),
-    # a merchant's house under the pointer: two seconds of the town, soft.
-    # Levelled at -25 LUFS with the peak at -2 dBFS: the knocks of hooves and
-    # cobbles cannot come up further without a limiter, and -22 left the
-    # continuous takes (bell, winch) 5 LU over them
-    'house-warrington': ('house-warrington-1', None, 'highpass=f=70,', HOUSE_PEAK, {'fade': 0.3, 'dehum': True, 'lufs': -25}),
-    'house-nottingham': ('house-nottingham-2', None, 'highpass=f=70,', HOUSE_PEAK, {'fade': 0.3, 'dehum': True, 'lufs': -25}),
-    # take 3 (seventh round): water lapping at a barge and a rope's creaks,
-    # denser and cleaner than take 1 (the listener model: 5.6 and 6.9
-    # against 2.6 and 5.8)
-    'house-shrewsbury': ('house-shrewsbury-3', None, 'highpass=f=70,', HOUSE_PEAK, {'fade': 0.3, 'dehum': True, 'lufs': -25}),
-    'house-oxford': ('house-oxford-1', None, 'highpass=f=70,', HOUSE_PEAK, {'fade': 0.3, 'dehum': True, 'lufs': -25}),
-    'house-gloucester': ('house-gloucester-1', None, 'highpass=f=70,', HOUSE_PEAK, {'fade': 0.3, 'dehum': True, 'lufs': -25}),
     # the rail's life, heard over its ambience every minute or so: far off,
     # so nothing under 90 Hz (the model's floor, and the rumble the rail's
     # bed was too full of) and the top dulled. Levelled by loudness a little
@@ -340,7 +327,7 @@ def dehum(pcm: array.array, ch: int, rate: int = 48000, g: float = 0.97) -> arra
     y[n] = x[n] - x[n-D] + g·y[n-D] with D one period, scaled back to unity
     between the notches. Each notch is about 2 Hz wide at g = 0.97; what it
     leaves on a transient is a tail 30 dB down, so it is kept for textures
-    (the loops, the houses) and not used on the knocks."""
+    (the loops) and not used on the knocks."""
     d = round(rate / HUM) * ch
     k = (1 + g) / 2
     y = [0.0] * len(pcm)

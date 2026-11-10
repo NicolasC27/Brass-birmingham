@@ -12,6 +12,8 @@ interface FakeSource {
 }
 
 let sources: FakeSource[] = [];
+/** the knocks made (one oscillator each) */
+let knocks = 0;
 
 class FakeContext {
   state = 'running';
@@ -24,6 +26,18 @@ class FakeContext {
   createGain() {
     const param = { value: 0.35, setValueAtTime() {}, linearRampToValueAtTime() {}, cancelScheduledValues() {}, exponentialRampToValueAtTime() {} };
     return { gain: param, connect: (d: unknown) => d };
+  }
+  createOscillator() {
+    knocks++;
+    const param = { value: 0, setValueAtTime() {}, exponentialRampToValueAtTime() {} };
+    return { type: 'sine', frequency: param, connect: (d: unknown) => d, start() {}, stop() {} };
+  }
+  createBiquadFilter() {
+    return { type: 'bandpass', frequency: { value: 0 }, Q: { value: 0 }, connect: (d: unknown) => d };
+  }
+  createBuffer(_channels: number, length: number) {
+    const data = new Float32Array(length);
+    return { duration: length / 48000, url: '', getChannelData: () => data };
   }
   createBufferSource() {
     const node = {
@@ -54,11 +68,12 @@ const settle = async () => {
   for (let i = 0; i < 8; i++) await new Promise((r) => setTimeout(r, 0));
 };
 const sounding = () => sources.filter((s) => s.started && s.stopAt === null);
-/** the recordings started, by the name of their file (house-oxford, stamp…) */
-const played = () => sources.filter((s) => s.started).map((s) => s.buffer?.url.replace(/^\/sfx\/(.*)\.\w+$/, '$1'));
+/** the recordings started, by the name of their file (link-canal, stamp…) */
+const played = () => sources.filter((s) => s.started && s.buffer?.url).map((s) => s.buffer!.url.replace(/^\/sfx\/(.*)\.\w+$/, '$1'));
 
 beforeEach(() => {
   sources = [];
+  knocks = 0;
   vi.resetModules();
   vi.stubGlobal('window', { AudioContext: FakeContext });
   vi.stubGlobal('AudioContext', FakeContext);
@@ -69,51 +84,31 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-describe('a house’s town under the pointer', () => {
-  it('plays the house’s own recording, once, and not in a loop', async () => {
+describe('a hand on the merchant’s counter', () => {
+  it('knocks once as the pointer arrives, never from a recording', async () => {
     const { houseHover } = await import('../sfx');
     houseHover('m-oxford');
     await settle();
-    expect(played()).toEqual(['house-oxford']);
-    expect(sources[0].loop).toBe(false);
-    /* heard to its end with the pointer still there: quiet, not again */
-    sources[0].onended?.();
+    expect(played()).toEqual([]);
+    expect(knocks).toBe(1);
+    /* resting there is not knocking again */
+    houseHover('m-oxford');
     await settle();
-    expect(played()).toEqual(['house-oxford']);
-    /* another house is its own town */
+    expect(knocks).toBe(1);
+    /* another house is another knock; leaving is silent */
     houseHover('m-gloucester');
+    houseHover(null);
     await settle();
-    expect(played()).toEqual(['house-oxford', 'house-gloucester']);
+    expect(knocks).toBe(2);
   });
 
-  it('coming back during the fade never lays a second loop over the first', async () => {
+  it('coming back to the same house knocks again', async () => {
     const { houseHover } = await import('../sfx');
     houseHover('m-shrewsbury');
-    await settle();
-    expect(sounding()).toHaveLength(1);
-
-    /* the pointer leaves, and comes back before the fade is over */
     houseHover(null);
     houseHover('m-shrewsbury');
     await settle();
-    expect(sources.filter((s) => s.started)).toHaveLength(1);
-
-    /* the old loop ends: the house sounds again, once */
-    sources[0].onended?.();
-    await settle();
-    expect(sources.filter((s) => s.started)).toHaveLength(2);
-    expect(sounding()).toHaveLength(1);
-  });
-
-  it('a loop that ends with the pointer gone stays quiet', async () => {
-    const { houseHover } = await import('../sfx');
-    houseHover('m-warrington');
-    await settle();
-    houseHover(null);
-    sources[0].onended?.();
-    await settle();
-    expect(sounding()).toHaveLength(0);
-    expect(sources.filter((s) => s.started)).toHaveLength(1);
+    expect(knocks).toBe(2);
   });
 });
 

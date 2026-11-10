@@ -109,130 +109,68 @@ const hash = (s: string): number => {
   return h >>> 0;
 };
 
-/** a small brass bell over a shop door: two partials, a quick strike and a
- *  slow ring, pitched a little differently for every house */
-export function houseBell(id: string): void {
+/* ---------------- a hand set on the merchant's counter, as the pointer arrives ---------------- */
+
+/** a knuckle on the counter's wood: a muted knock, short and low, its note
+ *  a hair different for every house, with a grain of felt under it. Heard,
+ *  never announced — the recordings of the towns and the brass bell over
+ *  the door were both found too loud for a pointer passing by */
+export function houseTouch(id: string): void {
   void context().then((ac) => {
-    if (ac) ring(ac, id);
+    if (ac && mix.on) knock(ac, id);
   });
 }
-function ring(ac: AudioContext, id: string): void {
+function knock(ac: AudioContext, id: string): void {
   const now = ac.currentTime;
-  const base = 880 * Math.pow(2, ((hash(id) % 7) - 3) / 12);
-  const master = ac.createGain();
-  master.gain.setValueAtTime(0.0001, now);
-  master.gain.exponentialRampToValueAtTime(0.07, now + 0.008);
-  master.gain.exponentialRampToValueAtTime(0.0001, now + 0.9);
-  master.connect(ac.destination);
-  for (const [ratio, level, decay] of [
-    [1, 1, 0.9],
-    [2.41, 0.45, 0.45],
-    [3.83, 0.18, 0.25],
-  ] as const) {
-    const o = ac.createOscillator();
-    o.type = 'sine';
-    o.frequency.setValueAtTime(base * ratio, now);
-    const g = ac.createGain();
-    g.gain.setValueAtTime(level, now);
-    g.gain.exponentialRampToValueAtTime(0.0001, now + decay);
-    o.connect(g).connect(master);
-    o.start(now);
-    o.stop(now + decay + 0.05);
-  }
+  const bus = busOf(ac, 'gestures');
+  const base = 260 * Math.pow(2, ((hash(id) % 5) - 2) / 12);
+  /* the body: a sine that drops a little as it dies, the way wood does */
+  const o = ac.createOscillator();
+  o.type = 'sine';
+  o.frequency.setValueAtTime(base * 1.3, now);
+  o.frequency.exponentialRampToValueAtTime(base, now + 0.035);
+  const g = ac.createGain();
+  g.gain.setValueAtTime(0.0001, now);
+  g.gain.exponentialRampToValueAtTime(0.11, now + 0.004);
+  g.gain.exponentialRampToValueAtTime(0.0001, now + 0.12);
+  o.connect(g).connect(bus);
+  o.start(now);
+  o.stop(now + 0.16);
+  /* the grain: a few milliseconds of noise through a band, the felt */
+  const n = Math.floor(ac.sampleRate * 0.025);
+  const buf = ac.createBuffer(1, n, ac.sampleRate);
+  const d = buf.getChannelData(0);
+  for (let i = 0; i < n; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / n);
+  const src = ac.createBufferSource();
+  src.buffer = buf;
+  const band = ac.createBiquadFilter();
+  band.type = 'bandpass';
+  band.frequency.value = 1500;
+  band.Q.value = 0.9;
+  const gg = ac.createGain();
+  gg.gain.setValueAtTime(0.05, now);
+  gg.gain.exponentialRampToValueAtTime(0.0001, now + 0.03);
+  src.connect(band).connect(gg).connect(bus);
+  src.start(now);
+  src.stop(now + 0.04);
 }
 
-/* ---------------- a house's own glimpse of its town, while hovered ---------------- */
-
-/** the houses with a recording of their own (/sfx/house-<name>): two
- *  seconds of the town behind the merchant, heard once as the pointer
- *  arrives; any other house rings its bell */
-const HOUSES = ['warrington', 'nottingham', 'shrewsbury', 'oxford', 'gloucester'];
-const houseName = (id: string): string => id.replace(/^m-/, '');
-/** the recording served for a house, decoded once; null when it has none */
-const houseSound = (id: string): Promise<AudioBuffer | null> => {
-  const name = houseName(id);
-  return HOUSES.includes(name) ? sample(`house-${name}`) : Promise.resolve(null);
-};
-/** the houses sit under the moves of the game: heard, not announced (the
- *  recordings are levelled a few LU under the gestures, at -25 LUFS) */
-const HOUSE_LEVEL = 0.6;
-
-let playing: { id: string; src: AudioBufferSourceNode; gain: GainNode } | null = null;
-/** the recordings still fading out, by house: a house the pointer comes
- *  back to within the fade waits for its old sound to end before it plays
- *  again, so two copies never sound over each other */
-const fading = new Map<string, AudioBufferSourceNode>();
-const FADE_IN = 0.06;
-const FADE_OUT = 0.4;
-
-/** the house under the pointer right now */
+/** the house under the pointer right now, so a pointer that rests there
+ *  is not a hand knocking again and again */
 let hovered: string | null = null;
 
-/** the pointer left the house: its sound fades out */
-export function houseLeave(): void {
-  hovered = null;
-  if (!playing) return;
-  const { id, src, gain } = playing;
-  playing = null;
-  const ac = src.context;
-  const now = ac.currentTime;
-  gain.gain.cancelScheduledValues(now);
-  gain.gain.setValueAtTime(gain.gain.value, now);
-  gain.gain.linearRampToValueAtTime(0.0001, now + FADE_OUT);
-  fading.set(id, src);
-  src.onended = () => {
-    if (fading.get(id) === src) fading.delete(id);
-    /* the pointer came back while it faded: the house sounds again */
-    if (hovered === id && !playing) sound(id);
-  };
-  src.stop(now + FADE_OUT + 0.05);
-}
-
-/** the house's recording, once, on the gestures' bus */
-function sound(id: string): void {
-  void houseSound(id).then(async (buf) => {
-    /* the pointer may have moved on while the file was fetched; a sound of
-       this house still fading out starts it again when it ends */
-    if (!buf || playing || hovered !== id || fading.has(id)) return;
-    const ac = await context();
-    if (!ac || playing || hovered !== id || fading.has(id)) return;
-    const src = ac.createBufferSource();
-    src.buffer = buf;
-    const gain = ac.createGain();
-    const now = ac.currentTime;
-    gain.gain.setValueAtTime(0.0001, now);
-    gain.gain.linearRampToValueAtTime(HOUSE_LEVEL, now + FADE_IN);
-    src.connect(gain).connect(busOf(ac, 'gestures'));
-    /* heard to its end, the house is quiet until the pointer comes again */
-    src.onended = () => {
-      if (playing?.src === src) playing = null;
-    };
-    src.start(now);
-    playing = { id, src, gain };
-    if (import.meta.env.DEV && heard.push(`house-${houseName(id)}`) > 40) heard.shift();
-  });
-}
-
-/** the pointer reached a house: its town is heard once — or the shop bell
- *  rings when it has no recording */
+/** the pointer reached a house (null: it left): one touch on arriving */
 export function houseHover(id: string | null): void {
-  if (playing && playing.id !== id) houseLeave();
+  if (id === hovered) return;
   hovered = id;
-  if (!id || (playing && playing.id === id)) return;
-  if (!mix.on) return;
-  sound(id);
-  /* the bell rings at once when there is nothing to hear */
-  void houseSound(id).then((buf) => {
-    if (!buf && hovered === id) houseBell(id);
-  });
+  if (id) houseTouch(id);
 }
 
 /** the table is left: whatever sounds is stopped and the context closed,
  *  so the tab no longer counts as one playing sound. The recordings stay
  *  decoded (a buffer outlives its context); the next sound opens another. */
 export function closeAudio(): void {
-  houseLeave();
-  fading.clear();
+  hovered = null;
   /* the ambience, its events and the tunes die with their context; what is
      wanted is kept for the next, and the waits are begun again there */
   table = null;
@@ -672,7 +610,6 @@ export function cue(name: Cue, opts: { quiet?: boolean; after?: number } = {}): 
 export function warmSounds(): void {
   if (!mix.on) return;
   for (const n of Object.keys(BUS_OF)) void sample(n);
-  for (const h of HOUSES) void sample(`house-${h}`);
 }
 
 /* ---------------- the strike: who laid the piece the press is about to strike ---------------- */
@@ -1364,7 +1301,7 @@ let lifeDue: number | null = null;
 let tuneDue: number | null = null;
 if (import.meta.env.DEV && typeof window !== 'undefined')
   (window as unknown as { __sfx?: Record<string, () => unknown> }).__sfx = {
-    playing: () => playing?.id ?? null,
+    hovered: () => hovered,
     ambience: () => table?.bed ?? null,
     life: () => life?.name ?? null,
     music: () => tune?.name ?? null,

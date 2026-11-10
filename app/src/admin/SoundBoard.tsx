@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { Play, Square, MessageSquare } from 'lucide-react';
 import { TOWN_BY_ID } from '@/game/data';
-import { counterBell, cue, cueNames, houseBell, lifeNow, mugClink, onSaid, pingTap, playRecording, saidNow, sayNow, setMix, stampThud, stationBell, steamWhistle, tableAmbience, tableMusic, tuneNow, warmSounds } from '@/gl/sfx';
+import { counterBell, cue, cueNames, houseTouch, lifeNow, mugClink, onSaid, pingTap, playRecording, saidNow, sayNow, setMix, stampThud, stationBell, steamWhistle, tableAmbience, tableMusic, tuneNow, warmSounds } from '@/gl/sfx';
 import { LIFE, TUNES } from '@/gl/playlist';
 import { CAST, LINES } from '@/gl/voices';
 import type { Line, Who } from '@/gl/voices';
@@ -26,7 +26,7 @@ const SYNTHS: [string, () => void][] = [
   ['Sifflet', steamWhistle],
   ['Presse (tuile)', () => stampThud('tile')],
   ['Presse (lien)', () => stampThud('link')],
-  ['Clochette de boutique', () => houseBell('birmingham')],
+  ['Main sur le comptoir', () => houseTouch('m-birmingham')],
 ];
 
 const ERA_NAME: Record<Era, string> = { canal: 'Canal', rail: 'Rail' };

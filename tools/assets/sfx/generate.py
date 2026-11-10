@@ -153,13 +153,6 @@ PLAN = {
     'ind-manufacturer': (1.0, 2, 0.6, False, 'a joiner\'s workbench: a wooden mallet tapping a chisel twice and a small iron vice turned with a creak, close, short, ' + ERA),
     'ind-pottery': (1.2, 2, 0.6, False, 'a potter\'s wheel turning briefly, then a fired earthenware jug set down on a wooden shelf with a soft ceramic clink, close, short, ' + ERA),
     'ind-brewery': (1.2, 2, 0.6, False, 'a small oak ale cask set down on a stone floor with a hollow knock, then a short pour of ale into a pewter tankard, close, short, ' + ERA),
-    # a merchant's house under the pointer: a glimpse of the town, soft
-    'house-warrington': (2.5, 2, 0.5, False, 'a coaching inn yard in a market town: a horse\'s hooves stepping slowly on cobbles, a harness jingle, a wooden cart wheel creaking past, soft and distant, no voices, no speech, ' + ERA),
-    'house-nottingham': (2.5, 2, 0.5, False, 'a market square on market day, soft and distant: a wooden stall shutter let down, a basket set on cobbles, a small hand bell rung once far off, no voices, no speech, ' + ERA),
-    'house-shrewsbury': (2.5, 2, 0.5, False, ['a river quay: water lapping against a moored wooden barge, a mooring rope creaking on a bollard, a gull far away, soft and calm, no voices, no speech, ' + ERA, 'a river quay: water lapping against a moored wooden barge, a mooring rope creaking on a bollard, a gull far away, soft and calm, no voices, no speech, ' + ERA,
-                        'a river quay at Shrewsbury: water lapping gently against a moored wooden barge, a mooring rope creaking slowly, soft and calm, clean recording, no voices, no speech, ' + ERA]),
-    'house-oxford': (2.5, 2, 0.5, False, 'a quiet old university town: a stagecoach rolling slowly over cobbles under a stone gateway, a chapel bell striking once in the distance, soft, no voices, no speech, ' + ERA),
-    'house-gloucester': (2.5, 2, 0.5, False, 'an inland port dock on a river: a wooden crane winch creaking, a heavy sack set down on timber boards, water lapping, soft and distant, no voices, no speech, ' + ERA),
 }
 
 # the music model costs more a second than the sound model: the 12 s probe

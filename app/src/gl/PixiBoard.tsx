@@ -497,9 +497,8 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
      panel in Game.tsx); C hides unbuilt link traces, F fullscreen */
   const opts = useBoardOptions();
   const { hideUnbuilt, hideLabels, bigChips, greyFreeMerchants: greyFreeMerch, stockStyle, traffic, tileArt, slotArt, colorBlind, sealTiles, sealLinks, cardGrain, chipStyle, sound } = opts;
-  /* the house's own sound while the pointer rests on it: its recording in
-     a loop, or a bell over the door (board option) — hushed at once when
-     the sound is turned off under the pointer */
+  /* a hand set on the merchant's counter as the pointer arrives: one soft
+     knock, nothing while it rests there — none when the sound is off */
   useEffect(() => {
     houseHover(hoverMerchant && sound ? hoverMerchant : null);
     return () => houseHover(null);
