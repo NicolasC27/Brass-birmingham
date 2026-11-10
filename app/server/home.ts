@@ -6,6 +6,7 @@ import type { GameState, SetupPayload } from '@/game/types';
 import type { PlayerColor } from '@/components/setup/constants';
 import type { HomeSave, HomeTable } from '@/online/table';
 import type { Rivalry } from '@/game/rivalry';
+import { dealOf, measure, minutesSince, moveOf, outcomeOf, reachOf } from './measure';
 import { Rivals } from './rivals';
 import type { Brief, Store } from './store';
 
@@ -37,6 +38,10 @@ interface Held {
   state: GameState;
   /** when it last moved */
   at: number;
+  /** when it was dealt */
+  since: number;
+  /** the furthest it has gone (reachOf): a round taken back is not reached twice */
+  reached: number;
 }
 
 /** a move turned down: the refusal as a key the tongues can say, and for a
@@ -89,7 +94,8 @@ export class Home {
     const setup = withEdition(asked);
     const state = newGame(setup, seed);
     const line = this.store.openHomeGame(ownerId, name, seed, setup, briefOf(state));
-    this.held.set(line.code, { ownerId, setup, seed, state, at: Date.now() });
+    this.held.set(line.code, { ownerId, setup, seed, state, at: Date.now(), since: line.startedAt, reached: reachOf(state) });
+    measure('game started', ownerId, line.code, { mode: 'home', ...dealOf(setup) });
     return line;
   }
 
@@ -102,15 +108,31 @@ export class Home {
     /* the log is a line, not a heap: a move out of step means the two sides
        have drifted, and the browser must read the game back */
     if (idx !== g.state.actions.length) return { ok: false, error: 'out-of-step', stands: g.state.actions.length };
-    const r = applyAction(g.state, actorOf(g.state, action), action);
-    if (!r.state) return { ok: false, error: r.error ?? 'the engine refused the action' };
+    const before = g.state;
+    const actor = actorOf(before, action);
+    /* the machines' moves are the browser's to drive: only the person's are measured */
+    const person = action.kind !== 'begin-rail' && !before.players[actor]?.isBot;
+    const r = applyAction(before, actor, action);
+    if (!r.state) {
+      if (person) measure('move refused', ownerId, code, { mode: 'home', kind: action.kind, error: r.error ?? 'refused' });
+      return { ok: false, error: r.error ?? 'the engine refused the action' };
+    }
     g.state = r.state;
     g.at = Date.now();
     this.store.appendHomeMove(ownerId, code, idx, action, briefOf(r.state));
     const over = r.state.phase === 'game-over';
+    if (person) measure('move played', ownerId, code, { mode: 'home', ...moveOf(action, before) });
+    if (!over && reachOf(r.state) > g.reached) {
+      g.reached = reachOf(r.state);
+      measure('round reached', ownerId, code, { mode: 'home', era: r.state.era, round: r.state.round });
+    }
     /* the standings are the office's own reading of its own log — the browser
        is never asked what it scored */
-    if (over) this.store.finishHomeGame(ownerId, code, r.state, tallyGame(setupOf(r.state), g.seed, r.state.actions));
+    if (over) {
+      this.store.finishHomeGame(ownerId, code, r.state, tallyGame(setupOf(r.state), g.seed, r.state.actions));
+      const seat = g.setup.players.findIndex((p) => p.type === 'human');
+      measure('game finished', ownerId, code, { mode: 'home', ...outcomeOf(r.state, Math.max(0, seat)), ...minutesSince(g.since) });
+    }
     return { ok: true, over };
   }
 
@@ -127,6 +149,7 @@ export class Home {
     } catch (e) {
       return { ok: false, error: (e as Error).message };
     }
+    measure('move taken back', ownerId, code, { mode: 'home', moves: g.state.actions.length - at, era: g.state.era, round: g.state.round });
     g.state = state;
     g.at = Date.now();
     this.store.dropHomeMoves(ownerId, code, at, briefOf(state));
@@ -135,7 +158,10 @@ export class Home {
 
   /** a game put away for good */
   forget(ownerId: string, code: string): void {
-    if (!this.store.homeSave(ownerId, code)) return;
+    const save = this.store.homeSave(ownerId, code);
+    if (!save) return;
+    /* put away before its end: a game let go */
+    if (!save.over) measure('game abandoned', ownerId, code, { mode: 'home', era: save.era, round: save.round, moves: save.actions.length, ...minutesSince(save.startedAt) });
     this.held.delete(code);
     this.store.forgetHomeGame(ownerId, code);
   }
@@ -155,7 +181,7 @@ export class Home {
       console.error(`game at home ${code}: the log would not replay:`, (e as Error).message);
       return null;
     }
-    const held: Held = { ownerId, setup: save.setup, seed: save.seed, state, at: Date.now() };
+    const held: Held = { ownerId, setup: save.setup, seed: save.seed, state, at: Date.now(), since: save.startedAt, reached: reachOf(state) };
     this.held.set(code, held);
     return held;
   }

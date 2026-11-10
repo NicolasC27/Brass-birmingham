@@ -9,6 +9,7 @@ import type { Dispatch, Desk, HallCounts, Identity, Invitation, Leaderboard, Lob
 import { TABLE_FILTERS, normalizeQuery } from '@/online/table';
 import { DEFAULT_PACE, TableGame } from './game';
 import type { Pace } from './game';
+import { dealOf, measure, minutesSince, moveOf, outcomeOf, reachOf } from './measure';
 import { Queue } from './queue';
 import type { Match, Mode, Waits } from './queue';
 import { seasonAt } from './rating';
@@ -546,6 +547,7 @@ export class Hall {
           console.error(`table ${code}: ${playerId} could not leave the game: ${error}`);
           return;
         }
+        measure('game abandoned', playerId, code, { mode: 'table', era: game.state.era, round: game.state.round });
       }
     }
     let hostId = room.table.hostId;
@@ -615,6 +617,7 @@ export class Hall {
       return;
     }
     room.game = this.deal(code, seatIds, setup, seed);
+    for (const id of seatIds) measure('game started', id, code, { mode: 'table', ranked: !!room.table.ranked, ...dealOf(setup) });
     for (const id of this.store.voidInvitations(code)) this.announceDesk(id);
     this.announce(code, 'game', true, true);
   }
@@ -623,6 +626,10 @@ export class Hall {
     /* what the last frame said, to tell a turn passing or the end from a move */
     let ended = false;
     let current = -1;
+    /* for the measures: when the bell rang (unknown for a game the house
+       reopened), and the furthest round the frames have shown */
+    const since = actions ? undefined : Date.now();
+    let reached = Infinity;
     const game: TableGame = new TableGame({
       code,
       seatIds,
@@ -640,18 +647,32 @@ export class Hall {
         ended = over;
         current = game.state.current;
         this.announce(code, 'game', turned || justEnded, justEnded);
+        if (!over && reachOf(game.state) > reached) {
+          reached = reachOf(game.state);
+          seatIds.forEach((id, seat) => {
+            if (!game.state.players[seat]?.isBot) measure('round reached', id, code, { mode: 'table', era: game.state.era, round: game.state.round });
+          });
+        }
       },
       journal: {
         append: (idx: number, action: GameAction) => this.store.appendMove(code, idx, action),
         drop: (idx: number) => this.store.dropMove(code, idx),
         finish: (state, tallies) => {
-          this.store.finishGame(code, state, tallies, !!this.rooms.get(code)?.table.ranked);
+          const ranked = !!this.rooms.get(code)?.table.ranked;
+          this.store.finishGame(code, state, tallies, ranked);
           this.watch.forget(code);
           /* the cote and the purse moved after the last frame went out: the desks again */
           for (const id of seatIds) if (!id.startsWith('bot-')) this.announceDesk(id);
+          /* the people still seated at the end; those who left were measured leaving */
+          seatIds.forEach((id, seat) => {
+            if (state.players[seat]?.isBot) return;
+            if (state.abandoned) measure('game abandoned', id, code, { mode: 'table', ranked, era: state.era, round: state.round, conceded: true, ...minutesSince(since) });
+            else measure('game finished', id, code, { mode: 'table', ranked, ...outcomeOf(state, seat), ...minutesSince(since) });
+          });
         },
       },
     });
+    reached = reachOf(game.state);
     return game;
   }
 
@@ -662,9 +683,16 @@ export class Hall {
        quicker than a board can be read is noted in the register */
     const opening = game.turnActions() === 0 && game.state.phase === 'action' && game.seatOf(playerId) === game.state.current;
     const age = game.turnAge();
+    const before = game.state;
     const error = game.act(playerId, action);
     if (!error && opening && action.kind !== 'concede' && action.kind !== 'resign' && this.watch.note(code, game.seatOf(playerId), age)) {
       this.store.flag(playerId, 'pace', `turn opened in ${age} ms, the twelfth such in a row`, code);
+    }
+    /* a vote to give the game up is not a move; the canal's close is the house's */
+    if (action.kind !== 'concede' && action.kind !== 'begin-rail') {
+      if (error) measure('move refused', playerId, code, { mode: 'table', kind: action.kind, error });
+      else if (action.kind === 'resign') measure('game abandoned', playerId, code, { mode: 'table', era: before.era, round: before.round });
+      else measure('move played', playerId, code, { mode: 'table', ...moveOf(action, before) });
     }
     return error;
   }
@@ -672,7 +700,9 @@ export class Hall {
   undo(code: string, playerId: string): string | null {
     const game = this.rooms.get(code)?.game;
     if (!game) return 'No game at this table';
-    return game.undo(playerId);
+    const error = game.undo(playerId);
+    if (!error) measure('move taken back', playerId, code, { mode: 'table', era: game.state.era, round: game.state.round });
+    return error;
   }
 
   pause(code: string, playerId: string, want: 'propose' | 'agree' | 'refuse' | 'resume'): string | null {
